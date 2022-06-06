@@ -6,7 +6,6 @@ import supervisely as sly
 
 import sly_globals as g
 
-# проверить docstrings
 
 def check_settings(
         settings: Dict[str, Union[str, int]], app_logger: sly.logger
@@ -19,14 +18,13 @@ def check_settings(
     Parameters
     ----------
     settings : Dict[str, Union[str, int]]
-        Settings dict
+        Settings from .yaml file
     app_logger : sly.logger
         Supervisely logger
 
     Returns
     -------
-    Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
-        Tuple with 3 arrays with predictions bounding boxes, scores and classes ids
+    None
     """
     for key, value in g.default_settings.items():
         if key not in settings:
@@ -38,23 +36,23 @@ def check_settings(
 
 
 def generate_predictions(
-        img_height: int, img_width: int
-) -> Tuple[List[Tuple[int]], List[float], List[int]]:
+        image: np.ndarray
+) -> Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]:
     """
     Generates prediction bounding boxes, scores and classes ids.
 
     Parameters
     ----------
-    img_height : int
-        Height of the image
-    img_width : int
-        Width of the image
+    image : np.ndarray
+        input image in numpy array format
 
     Returns
     -------
-    Tuple[List[Tuple[int]], List[float], List[int]]
+    Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
         Tuple with 3 arrays with predictions bounding boxes, scores and classes ids
     """
+    img_height, img_width = image.shape[:2]
+
     pred_bboxes = []
     pred_scores = []
     pred_classes = []
@@ -83,26 +81,23 @@ def generate_predictions(
 
 
 def convert_preds_to_sly_annotation(
-        pred_bboxes: Tuple[int, int, int, int],
+        pred_bboxes: List[Tuple[int, int, int, int]],
         pred_scores: List[float],
         pred_classes: List[int],
-        img_height: int,
-        img_width: int,
+        img_size: Tuple[int, int],
 ) -> Dict[str, Union[str, int]]:
     """Convert model predictions to supervisely format annotation.
 
     Parameters
     ----------
-    pred_bboxes : Tuple[int, int, int, int]
+    pred_bboxes : List[Tuple[int, int, int, int]]
         Prediction bounding boxes
     pred_scores : List[float]
         Prediction scores
     pred_classes : List[int]
         Prediction classes ids
-    img_height : int
-        Height of the image
-    img_width : int
-        Width of the image
+    img_size : Tuple[int, int]
+        height and width of the image
 
     Returns
     -------
@@ -128,21 +123,21 @@ def convert_preds_to_sly_annotation(
         sly_label = sly.Label(sly_rect, sly_obj_class, tags=sly_tag_collection)
         labels.append(sly_label)
 
-    ann = sly.Annotation(img_size=(img_height, img_width), labels=labels)
+    ann = sly.Annotation(img_size=img_size, labels=labels)
     return ann.to_json()
 
 
 def postprocess_predictions(
-        pred_bboxes: Tuple[int, int, int, int],
+        pred_bboxes: List[Tuple[int, int, int, int]],
         pred_scores: List[float],
         pred_classes: List[int],
         conf_thres: float = 0.5,
-) -> Tuple[List[int], List[float], List[int]]:
+) -> Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]:
     """Process predictions with given confidence threshold.
 
     Parameters
     ----------
-    pred_bboxes : Tuple[int, int, int, int]
+    pred_bboxes : List[Tuple[int, int, int, int]]
         Prediction bounding boxes
     pred_scores : List[float]
         Prediction scores
@@ -153,7 +148,7 @@ def postprocess_predictions(
 
     Returns
     -------
-    Tuple[List[int], List[float], List[int]]
+    Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
         Tuple with processed predictions
     """
     result_bboxes, result_scores, result_classes = [], [], []
@@ -169,21 +164,14 @@ def postprocess_predictions(
 
 
 def inference(
-        api: sly.Api,
-        state: Dict[str, Union[str, int]],
-        image_path: str,
-        app_logger: sly.logger,
+        state: Dict[str, Union[str, int]], image_path: str, app_logger: sly.logger
 ) -> Dict[str, Union[str, int]]:
     """Process inference from given image id.
 
     Parameters
     ----------
-    api : sly.Api
-        Prediction bounding boxes
     state : Dict[str, Union[str, int]]
         Dict that stores application fields
-    image_id : int
-        Image ID on Supervisely instance
     image_path : int
         Local path to image
     app_logger : sly.logger
@@ -194,24 +182,18 @@ def inference(
     Dict[str, Union[str, int]]
         Supervisely annotation in JSON format
     """
-    # get annotation by image id
-    image = sly.image.read(image_path)
-    img_height, img_width = image.shape[:2]
+    image = sly.image.read(path=image_path)
 
     """
-    Это демо функция чтобы показать как выполнить инференс на выбранной картинке в supervsely.
-    
-    Мы генерируем случайные предсказания в этом шаблоне для демонстрации функционала, но вам потребуется заменить
-    реализацию функции generate_predictions() на свою, с ипользованием инфересна собственной модели. 
-    """
+    This is a demo function to show how to perform inference on a selected image in supervsely.
 
-    pred_bboxes, pred_scores, pred_classes = generate_predictions(
-        img_height=img_height, img_width=img_width
-    )
+    Function generate random predictions in this template to demonstrate the functionality, but you will need to replace
+    implementation of the generate_predictions() function on your own, using the inference of your own model
+    """
+    pred_bboxes, pred_scores, pred_classes = generate_predictions(image=image)
 
     """
-    Файл custom_settings.yaml содержит параметры для постпроцессинга и 
-    предназначен для хранения параметров  
+    The file custom_settings.yaml contains settings for postprocessing and designed to store parameters.
     """
     check_settings(settings=state.get("settings", {}), app_logger=app_logger)
     conf_thres = state.get("settings").get(
@@ -219,7 +201,7 @@ def inference(
     )
 
     """
-    В функции postprocess_predictions() выполняется постобработка предиктов модели (например, NMS).
+    The postprocess_predictions() function performs post-processing of model predictions (for example, NMS).
     """
     result_bboxes, result_scores, result_classes = postprocess_predictions(
         pred_bboxes=pred_bboxes,
@@ -227,15 +209,15 @@ def inference(
         pred_classes=pred_classes,
         conf_thres=conf_thres,
     )
+
     """
-    Функция convert_preds_to_sly_annotation() конвертирует предсказания модели в формат supervisely аннотаций.
+    The convert_preds_to_sly_annotation() function converts model predictions into supervisely annotation format.
     """
     ann_json = convert_preds_to_sly_annotation(
         pred_bboxes=result_bboxes,
         pred_scores=result_scores,
         pred_classes=result_classes,
-        img_height=img_height,
-        img_width=img_width,
+        img_size=image.shape[:2],
     )
 
     return ann_json
@@ -247,7 +229,7 @@ def construct_model_meta(model_classes: List[str]) -> sly.ProjectMeta:
     Parameters
     ----------
     model_classes : List[str]
-        Model classes
+        List of model classes
 
     Returns
     -------
@@ -268,11 +250,3 @@ def construct_model_meta(model_classes: List[str]) -> sly.ProjectMeta:
         tag_metas=sly.TagMetaCollection(tags),
     )
     return meta
-
-
-
-def shutdown_app():
-    try:
-        sly.app.fastapi.shutdown()
-    except KeyboardInterrupt:
-        sly.logger.info("Application shutdown successfully")
