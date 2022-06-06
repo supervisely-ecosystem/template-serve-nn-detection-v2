@@ -1,0 +1,2 @@
+# object confidence threshold (for debug 0.001)
+confidence_threshold: 0.25
