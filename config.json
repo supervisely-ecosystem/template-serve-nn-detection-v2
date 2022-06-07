@@ -1,22 +1,19 @@
 {
-    "name": "Template Serve NN Detection",
+    "name": "Serve Custom Detection Model Template",
     "type": "app",
-    "version": "2.0.0",
     "categories": [
-      "Templates"
+      "templates"
     ],
-    "description": "Template application to serve custom NN models",
+    "main_script": "src/main.py",
+    "description": "Template application to serve custom detection models",
     "docker_image": "supervisely/base-py-sdk:latest",
-    "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000",
-    "port": 8000,
     "task_location": "application_sessions",
     "icon_background": "#FFFFFF",
-
     "icon": "https://imgur.com/a9u0M3Y.png",
     "icon_cover": true,
-
+    "need_gpu": true,
     "headless": true,
-    "instance_version": "6.4.45",
+    "instance_version": "6.4.51",
     "context_menu": {
       "target": [
         "files_file"
