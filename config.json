@@ -7,7 +7,7 @@
     ],
     "description": "Template application to serve custom NN models",
     "docker_image": "supervisely/base-py-sdk:latest",
-    "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000",
+    "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000 --log-config log_conf.yml",
     "port": 8000,
     "task_location": "application_sessions",
     "icon_background": "#FFFFFF",

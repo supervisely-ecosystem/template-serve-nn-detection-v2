@@ -1,6 +1,5 @@
 import functools
 import os
-from fastapi import Request
 import supervisely as sly
 
 import src.helpers as helpers
@@ -21,24 +20,24 @@ def send_error_data(func):
     return wrapper
 
 
-@g.app.post("/get_output_classes_and_tags/")
+@g.app.post("/get_output_classes_and_tags")
 @sly.timeit
-def get_output_classes_and_tags(context):
+def get_output_classes_and_tags(api, task_id, context, state, app_logger):
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data=g.meta.to_json())
 
 
-@g.app.post("/get_custom_inference_settings/")
+@g.app.post("/get_custom_inference_settings")
 @sly.timeit
-def get_custom_inference_settings(context):
+def get_custom_inference_settings(api, task_id, context, state, app_logger):
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data={"settings": g.default_settings})
 
 
-@g.app.post("/get_session_info/")
+@g.app.post("/get_session_info")
 @sly.timeit
 @send_error_data
-def get_session_info(context):
+def get_session_info(query, context):
     info = {
         "app": "Custom Detection Serve",
         # "model_name": "",
@@ -51,9 +50,9 @@ def get_session_info(context):
     g.sly_app.send_response(request_id, data=info)
 
 
-@g.app.post("/inference_image_url/")
+@g.app.post("/inference_image_url")
 @sly.timeit
-def inference_image_url(api, context, state, app_logger):
+def inference_image_url(api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     image_url = state["image_url"]
     ext = sly.fs.get_file_ext(image_url)
@@ -70,9 +69,9 @@ def inference_image_url(api, context, state, app_logger):
     g.sly_app.send_response(request_id, data=ann_json)
 
 
-@g.app.post("/inference_image_id/")
+@g.app.post("/inference_image_id")
 @sly.timeit
-def inference_image_id(api, context, state, app_logger):
+def inference_image_id(api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
@@ -85,9 +84,9 @@ def inference_image_id(api, context, state, app_logger):
     g.sly_app.send_response(request_id, data=ann_json)
 
 
-@g.app.post("/inference_batch_ids/")
+@g.app.post("/inference_batch_ids")
 @sly.timeit
-def inference_batch_ids(api, context, state, app_logger):
+def inference_batch_ids(api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     ids = state["batch_ids"]
     infos = api.image.get_info_by_id_batch(ids)
@@ -107,7 +106,7 @@ def inference_batch_ids(api, context, state, app_logger):
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data=results)
 
-
-@g.app.get("/")
-def read_index(request: Request):
-    return g.templates.TemplateResponse('index.html', {'request': request})
+# from fastapi import Request
+# @g.app.get("/")
+# def read_index(request: Request):
+#     return g.templates.TemplateResponse('index.html', {'request': request})

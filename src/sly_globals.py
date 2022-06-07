@@ -27,7 +27,7 @@ api = sly.Api.from_env()
 app = FastAPI()
 sly_app = create()
 app.mount("/sly", sly_app)
-templates = sly.app.fastapi.Jinja2Templates(directory="templates")
+# templates = sly.app.fastapi.Jinja2Templates(directory="templates")
 
 # Global variables
 team_id = int(os.environ["context.teamId"])
