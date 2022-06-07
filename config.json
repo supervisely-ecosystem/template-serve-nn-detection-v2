@@ -1,21 +1,20 @@
 {
-  "name": "Template Serve NN Detection",
-  "type": "app",
-  "version": "2.0.0",
-  "categories": [
-    "neural network",
-    "images",
-    "object detection"
-  ],
-  "description": "Template app for serving custom user detection models",
-  "docker_image": "supervisely/base-py-sdk:6.18.1",
-  "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000",
-  "port": 8000,
-  "task_location": "application_sessions",
-  "icon_background": "#FFFFFF",
-  "icon": "https://imgur.com/a9u0M3Y.png",
-  "icon_cover": true,
-  "isolate": true,
-  "headless": true,
-  "instance_version": "6.4.45"
+    "name": "Template Serve NN Detection",
+    "type": "app",
+    "version": "2.0.0",
+    "categories": [
+      "Templates"
+    ],
+    "description": "Template application to serve custom NN models",
+    "docker_image": "supervisely/base-py-sdk:latest",
+    "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000",
+    "port": 8000,
+    "task_location": "application_sessions",
+    "icon_background": "#FFFFFF",
+
+    "icon": "https://imgur.com/a9u0M3Y.png",
+    "icon_cover": true,
+
+    "headless": true,
+    "instance_version": "6.4.45"
 }
