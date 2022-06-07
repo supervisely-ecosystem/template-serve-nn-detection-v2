@@ -1,2 +1,5 @@
-# object confidence threshold (for debug 0.001)
-confidence_threshold: 0.25
+# object confidence threshold
+confidence_threshold: 0.01
+
+# batch size (if you use batch inference)
+batch_size: 64

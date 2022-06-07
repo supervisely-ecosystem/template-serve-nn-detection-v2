@@ -1,15 +1,130 @@
 import random
 from typing import Dict, List, Tuple, Union
-
+import functools
+import os
+import sys
 import numpy as np
 import supervisely as sly
 
 import src.sly_globals as g
 
 
+def get_image_from_args() -> Tuple[str, str]:
+    if len(sys.argv) == 1:
+        return None
+    if len(sys.argv) != 3: 
+        raise AttributeError("Usage: main.py input_image_path output_image_path")
+    if not os.path.exists(sys.argv[1]):
+        raise FileExistsError(f"File {sys.argv[1]} not found.")
+    return sys.argv[1], sys.argv[2]
+
+
+def draw_demo_result(input_image_path, annotation, output_image_path) -> None:
+    image = sly.image.read(path=input_image_path)
+    for label in annotation.labels:
+        label.draw_contour(image, thickness=5)
+    
+    sly.image.write(output_image_path, image)
+    sly.logger.info(f"Labeled image saved to {output_image_path} successfully")
+
+
+def send_error_data(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        value = None
+        try:
+            value = func(*args, **kwargs)
+        except Exception as e:
+            request_id = kwargs["context"]["request_id"]
+            g.app.send_response(request_id, data={"error": repr(e)})
+        return value
+
+    return wrapper
+
+
+@g.app.callback("get_output_classes_and_tags")
+@sly.timeit
+def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data=g.model_meta.to_json())
+
+
+@g.app.callback("get_custom_inference_settings")
+@sly.timeit
+def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data={"settings": g.default_settings_str})
+
+
+@g.app.callback("get_session_info")
+@sly.timeit
+@send_error_data
+def get_session_info(api: sly.Api, task_id, context, state, app_logger):
+    info = {
+        "app": "Serve Custom Detection Model Template",
+        "model_name": g.model_name,
+        "device": g.device,
+        "classes_count": len(g.model_meta.obj_classes),
+        "tags_count": len(g.model_meta.tag_metas),
+        "sliding_window_support": True
+    }
+
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data=info)
+
+
+@g.app.callback("inference_image_url")
+@sly.timeit
+def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
+    app_logger.debug("Input data", extra={"state": state})
+    image_url = state["image_url"]
+
+    ext = sly.fs.get_file_ext(image_url)
+    assert ext in ["png", "jpg", "jpeg"]
+    local_image_path = os.path.join(g.app.data_dir, f"{sly.rand_str(15)}.{ext}")
+    sly.fs.download(image_url, local_image_path)
+
+    ann = g.inference_fn(state=state, image_path=local_image_path)
+
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data=ann.to_json())
+
+
+@g.app.callback("inference_image_id")
+@sly.timeit
+def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
+    app_logger.debug("Input data", extra={"state": state})
+    image_id = state["image_id"]
+    image_info = api.image.get_info_by_id(image_id)
+    image_path = os.path.join(g.app.data_dir, sly.rand_str(10) + image_info.name)
+    ann = g.inference_fn(state=state, image_path=image_path)
+    sly.fs.silent_remove(image_path)
+    
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data=ann.to_json())
+
+
+@g.app.callback("inference_batch_ids")
+@sly.timeit
+def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
+    app_logger.debug("Input data", extra={"state": state})
+    ids = state["batch_ids"]
+    infos = api.image.get_info_by_id_batch(ids)
+    paths = [os.path.join(g.app.data_dir, sly.rand_str(10) + info.name) for info in infos]
+    api.image.download_paths(infos[0].dataset_id, ids, paths)
+    results = []
+    for image_path in paths:
+        ann = g.inference_fn(
+            state=state, image_path=image_path
+        )
+        results.append(ann.to_json())
+
+    request_id = context["request_id"]
+    g.app.send_response(request_id, data=results)
+
+
 def check_settings(
-        settings: Dict[str, Union[str, int]], app_logger: sly.logger
-) -> None:
+        settings: Dict[str, Union[str, int]]) -> None:
     """
     Check custom settings.
 
@@ -19,8 +134,6 @@ def check_settings(
     ----------
     settings : Dict[str, Union[str, int]]
         Settings from .yaml file
-    app_logger : sly.logger
-        Supervisely logger
 
     Returns
     -------
@@ -28,7 +141,7 @@ def check_settings(
     """
     for key, value in g.default_settings.items():
         if key not in settings:
-            app_logger.warn(
+            sly.logger.warn(
                 "Field {!r} not found in inference settings. Use default value {!r}".format(
                     key, value
                 )
@@ -39,7 +152,8 @@ def generate_predictions(
         image: np.ndarray
 ) -> Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]:
     """
-    Generates prediction bounding boxes, scores and classes ids.
+    Gets prediction bounding boxes, scores and classes.
+    We use randomly generated labels but you should get predictions from your model here.
 
     Parameters
     ----------
@@ -49,7 +163,7 @@ def generate_predictions(
     Returns
     -------
     Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
-        Tuple with 3 arrays with predictions bounding boxes, scores and classes ids
+        Tuple with 3 arrays with predictions: bounding boxes, scores and classes
     """
     img_height, img_width = image.shape[:2]
 
@@ -124,7 +238,7 @@ def convert_preds_to_sly_annotation(
         labels.append(sly_label)
 
     ann = sly.Annotation(img_size=img_size, labels=labels)
-    return ann.to_json()
+    return ann
 
 
 def postprocess_predictions(
@@ -163,74 +277,9 @@ def postprocess_predictions(
     return result_bboxes, result_scores, result_classes
 
 
-def inference(
-        state: Dict[str, Union[str, int]], image_path: str, app_logger: sly.logger
-) -> Dict[str, Union[str, int]]:
-    """Process inference from given image id.
+def construct_model_meta() -> None:
+    """Generate project meta from model classes names."""
 
-    Parameters
-    ----------
-    state : Dict[str, Union[str, int]]
-        Dict that stores application fields
-    image_path : int
-        Local path to image
-    app_logger : sly.logger
-        Supervisely logger
-
-    Returns
-    -------
-    Dict[str, Union[str, int]]
-        Supervisely annotation in JSON format
-    """
-    image = sly.image.read(path=image_path)
-
-    """
-    This is a demo function to show how to perform inference on a selected image in supervsely.
-
-    Function generate random predictions in this template to demonstrate the functionality, but you will need to replace
-    implementation of the generate_predictions() function on your own, using the inference of your own model
-    """
-    pred_bboxes, pred_scores, pred_classes = generate_predictions(image=image)
-
-    """
-    The file custom_settings.yaml contains settings for postprocessing and designed to store parameters.
-    """
-    check_settings(settings=state.get("settings", {}), app_logger=app_logger)
-    conf_thres = state.get("settings").get(
-        "confidence_threshold", g.default_settings["confidence_threshold"]
-    )
-
-    """
-    The postprocess_predictions() function performs post-processing of model predictions (for example, NMS).
-    """
-    result_bboxes, result_scores, result_classes = postprocess_predictions(
-        pred_bboxes=pred_bboxes,
-        pred_scores=pred_scores,
-        pred_classes=pred_classes,
-        conf_thres=conf_thres,
-    )
-
-    """
-    The convert_preds_to_sly_annotation() function converts model predictions into supervisely annotation format.
-    """
-    ann_json = convert_preds_to_sly_annotation(
-        pred_bboxes=result_bboxes,
-        pred_scores=result_scores,
-        pred_classes=result_classes,
-        img_size=image.shape[:2],
-    )
-
-    return ann_json
-
-
-def construct_model_meta() -> sly.ProjectMeta:
-    """Generate project meta from model classes list.
-
-    Returns
-    -------
-    sly.ProjectMeta
-        Supervisely project meta
-    """
     colors = []
     for i in range(len(g.model_classes)):
         colors.append(sly.color.generate_rgb(exist_colors=colors))
@@ -244,4 +293,29 @@ def construct_model_meta() -> sly.ProjectMeta:
         obj_classes=sly.ObjClassCollection(obj_classes),
         tag_metas=sly.TagMetaCollection(tags),
     )
-    g.meta = meta
+    g.model_meta = meta
+
+
+def download_model() -> None:
+    # TODO:
+    """Add description"""
+    if g.remote_weights_path is None:
+        # Template case without model
+        sly.logger.info("Model is not found. Template mode with random labels will be used.")
+        return
+
+    info = g.api.file.get_info_by_path(g.team_id, g.remote_weights_path)
+    if info is None:
+        raise FileNotFoundError(f"Weights file not found: {g.remote_weights_path}")
+
+    sly.logger.info("Downloading model weights...")
+    g.local_weights_path = os.path.join(g.app.data_dir, sly.fs.get_file_name_with_ext(g.remote_weights_path))
+    g.api.file.download(
+        g.team_id,
+        g.remote_weights_path,
+        g.local_weights_path,
+        cache=g.app.cache
+    )
+
+    sly.logger.info("Model has been successfully downloaded")
+

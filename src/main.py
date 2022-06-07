@@ -1,117 +1,98 @@
-import functools
-import os
 import supervisely as sly
-
 import src.helpers as helpers
 import src.sly_globals as g
 
 
-def send_error_data(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        value = None
-        try:
-            value = func(*args, **kwargs)
-        except Exception as e:
-            request_id = kwargs["context"]["request_id"]
-            g.app.send_response(request_id, data={"error": repr(e)})
-        return value
+def inference( state: dict, image_path: str) -> sly.Annotation:
+    """This is a demo function to show how to inference your custom model
+    on a selected image in supervsely.
 
-    return wrapper
+    Parameters
+    ----------
+    state : dict
+        Dict that stores application fields
+    image_path : str
+        Local path to image
 
+    Returns
+    -------
+    sly.Annotation
+        Supervisely annotation
+    """
+    # Read image from local file
+    image = sly.image.read(path=image_path)
 
-@g.app.callback("get_output_classes_and_tags")
-@sly.timeit
-def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data=g.meta.to_json())
+    # Function generates random predictions in this template to demonstrate the functionality, 
+    # but you will need to replace implementation of the generate_predictions() 
+    # function to your own, using the inference of your own model
+    pred_bboxes, pred_scores, pred_classes = helpers.generate_predictions(image=image)
+    ##########################################
+    # INSERT YOUR CODE INSTEAD OF LINE ABOVE #
+    ##########################################
 
-
-@g.app.callback("get_custom_inference_settings")
-@sly.timeit
-def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data={"settings": g.default_settings_str})
-
-
-@g.app.callback("get_session_info")
-@sly.timeit
-@send_error_data
-def get_session_info(api: sly.Api, task_id, context, state, app_logger):
-    info = {
-        "app": "Custom Detection Serve",
-        # "model_name": "",
-        "classes_count": len(g.meta.obj_classes),
-        "tags_count": len(g.meta.tag_metas),
-        # "supports_sliding_window": False
-    }
-
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data=info)
-
-
-@g.app.callback("inference_image_url")
-@sly.timeit
-def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
-    image_url = state["image_url"]
-    ext = sly.fs.get_file_ext(image_url)
-    if ext == "":
-        ext = ".jpg"
-    local_image_path = os.path.join(g.app.data_dir, sly.rand_str(15) + ext)
-    sly.fs.download(image_url, local_image_path)
-    ann_json = helpers.inference(
-        state=state, image_path=local_image_path, app_logger=app_logger
+    # The file custom_settings.yaml contains settings for postprocessing and 
+    # designed to store parameters
+    settings = state.get("settings", {})
+    helpers.check_settings(settings=settings)
+    conf_thres = settings.get(
+        "confidence_threshold", g.default_settings["confidence_threshold"]
     )
 
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data=ann_json)
-
-
-@g.app.callback("inference_image_id")
-@sly.timeit
-def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
-    image_id = state["image_id"]
-    image_info = api.image.get_info_by_id(image_id)
-    image_path = os.path.join(g.app.data_dir, sly.rand_str(10) + image_info.name)
-    ann_json = helpers.inference(
-        state=state, image_path=image_path, app_logger=app_logger
+    
+    # This function performs post-processing of model predictions (for example, NMS)
+    result_bboxes, result_scores, result_classes = helpers.postprocess_predictions(
+        pred_bboxes=pred_bboxes,
+        pred_scores=pred_scores,
+        pred_classes=pred_classes,
+        conf_thres=conf_thres,
     )
-    sly.fs.silent_remove(image_path)
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data=ann_json)
+
+    
+    # This function converts model predictions into supervisely annotation format
+    annotation = helpers.convert_preds_to_sly_annotation(
+        pred_bboxes=result_bboxes,
+        pred_scores=result_scores,
+        pred_classes=result_classes,
+        img_size=image.shape[:2],
+    )
+
+    return annotation
 
 
-@g.app.callback("inference_batch_ids")
-@sly.timeit
-def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
-    ids = state["batch_ids"]
-    infos = api.image.get_info_by_id_batch(ids)
-    paths = [os.path.join(g.app.data_dir, sly.rand_str(10) + info.name) for info in infos]
-    api.image.download_paths(infos[0].dataset_id, ids, paths)
-    results = []
-    for image_path in paths:
-        ann_json = helpers.inference(
-            state=state, image_path=image_path, app_logger=app_logger
-        )
-        results.append(ann_json)
+def deploy_model() -> None:
+    """
+    Add comment
+    """
+    #####################
+    # CHANGE CODE BELOW #
+    #####################
+    pass
+    # g.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # g.model_classes = get_classes_from_model_config()
+    # g.model_id_classes_map = dict(enumerate(g.model_classes))
+    # g.model_name = "Your Custom Model Name"
 
-    request_id = context["request_id"]
-    g.app.send_response(request_id, data=results)
+    # g.model = init_model(weigths=g.local_weights_path, device=g.device)
+    # sly.logger.info("🟩 Model has been successfully deployed")
+
 
 
 def main():
-    sly.logger.info("Script arguments", extra={
+    sly.logger.info("Supervisely settings", extra={
         "context.teamId": g.team_id,
         "context.workspaceId": g.workspace_id
     })
-
-    # preprocess()
-    # my_app.run(initial_events=[{"command": "preprocess"}])
-    helpers.construct_model_meta()
-    g.app.run()
+    input_image_path, output_image_path = helpers.get_image_from_args()
+    g.inference_fn = inference
+    if input_image_path is not None: 
+        state = {}
+        result_annotation = g.inference_fn(state, input_image_path)
+        helpers.draw_demo_result(input_image_path, result_annotation, output_image_path)
+    else:
+        helpers.download_model()
+        deploy_model()
+        helpers.construct_model_meta()
+        g.app.run()
 
 
 if __name__ == "__main__":

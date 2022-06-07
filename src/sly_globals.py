@@ -1,6 +1,5 @@
 import os
 import sys
-
 import supervisely as sly
 import yaml
 from supervisely.app.v1.app_service import AppService
@@ -28,11 +27,18 @@ workspace_id = int(os.environ["context.workspaceId"])
 
 # Template model settings
 model_classes = ["person", "car", "dog"]  # this is an example list of custom nn model classes
+inference_fn = None
 model_id_classes_map = dict(enumerate(model_classes))
 confidence_tag_name = "confidence"
-meta = None
+model_meta: sly.ProjectMeta = None
+model_name = "Random boxes"
+device = None
+remote_weights_path = None
+local_weights_path = None
+# Use this for using model from team files
+# remote_weights_path = os.environ['modal.state.slyFile'] 
 
-# Read .yaml file with settings to apply it to model
+# Read custom_settings.yaml file
 settings_path = os.path.join(app_root_directory, "custom_settings.yaml")
 sly.logger.info(f"Custom inference settings path: {settings_path}")
 with open(settings_path, "r") as file:
