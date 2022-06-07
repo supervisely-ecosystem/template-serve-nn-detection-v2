@@ -9,10 +9,6 @@ app_root_directory = str(pathlib.Path(sys.argv[0]).parents[1])
 sly.logger.info(f"App root directory: {app_root_directory}")
 sys.path.append(app_root_directory)
 
-source_path = os.path.join(app_root_directory, "src")
-sly.logger.info(f"Source directory: {source_path}")
-sys.path.append(source_path)
-
 # Use the following lines only for debug purposes
 from dotenv import load_dotenv
 debug_env_path = os.path.join(app_root_directory, "debug.env")

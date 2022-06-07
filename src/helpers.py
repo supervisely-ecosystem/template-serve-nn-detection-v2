@@ -4,7 +4,7 @@ import os
 import sys
 import supervisely as sly
 
-import sly_globals as g
+import src.sly_globals as g
 
 
 def serve_detection(get_classes_and_tags_fn,

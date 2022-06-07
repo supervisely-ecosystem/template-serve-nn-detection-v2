@@ -1,6 +1,6 @@
 import supervisely as sly
-import sly_globals as g
-import helpers
+import src.sly_globals as g
+import src.helpers as helpers
 
 
 def get_classes_and_tags():
