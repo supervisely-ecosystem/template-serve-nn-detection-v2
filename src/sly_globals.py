@@ -10,11 +10,11 @@ sly.logger.info(f"App root directory: {app_root_directory}")
 sys.path.append(app_root_directory)
 
 # Use the following lines only for debug purposes
-from dotenv import load_dotenv
-debug_env_path = os.path.join(app_root_directory, "debug.env")
-secret_debug_env_path = os.path.join(app_root_directory, "secret_debug.env")
-load_dotenv(debug_env_path)
-load_dotenv(secret_debug_env_path, override=True)
+# from dotenv import load_dotenv
+# debug_env_path = os.path.join(app_root_directory, "debug.env")
+# secret_debug_env_path = os.path.join(app_root_directory, "secret_debug.env")
+# load_dotenv(debug_env_path)
+# load_dotenv(secret_debug_env_path, override=True)
 
 # App initialization
 api = sly.Api.from_env()
@@ -31,4 +31,7 @@ get_session_info_fn = None
 deploy_model_fn = None
 device = None
 local_weights_path = None
-remote_weights_path = os.environ['modal.state.slyFile'] 
+remote_weights_path = ""
+if "modal.state.slyFile" in os.environ:
+    remote_weights_path = os.environ['modal.state.slyFile'] 
+
