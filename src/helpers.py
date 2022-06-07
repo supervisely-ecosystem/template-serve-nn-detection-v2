@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import supervisely as sly
 
-import sly_globals as g
+import src.sly_globals as g
 
 
 def check_settings(

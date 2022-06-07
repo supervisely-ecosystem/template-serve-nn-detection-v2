@@ -1,10 +1,10 @@
 import functools
 import os
-
+from fastapi import Request
 import supervisely as sly
 
-import helpers
-import sly_globals as g
+import src.helpers as helpers
+import src.sly_globals as g
 
 
 def send_error_data(func):
@@ -21,21 +21,21 @@ def send_error_data(func):
     return wrapper
 
 
-@g.sly_app.post("/get_output_classes_and_tags/")
+@g.app.post("/get_output_classes_and_tags/")
 @sly.timeit
 def get_output_classes_and_tags(context):
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data=g.meta.to_json())
 
 
-@g.sly_app.post("/get_custom_inference_settings/")
+@g.app.post("/get_custom_inference_settings/")
 @sly.timeit
 def get_custom_inference_settings(context):
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data={"settings": g.default_settings})
 
 
-@g.sly_app.post("/get_session_info/")
+@g.app.post("/get_session_info/")
 @sly.timeit
 @send_error_data
 def get_session_info(context):
@@ -51,7 +51,7 @@ def get_session_info(context):
     g.sly_app.send_response(request_id, data=info)
 
 
-@g.sly_app.post("/inference_image_url/")
+@g.app.post("/inference_image_url/")
 @sly.timeit
 def inference_image_url(api, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
@@ -70,7 +70,7 @@ def inference_image_url(api, context, state, app_logger):
     g.sly_app.send_response(request_id, data=ann_json)
 
 
-@g.sly_app.post("/inference_image_id/")
+@g.app.post("/inference_image_id/")
 @sly.timeit
 def inference_image_id(api, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
@@ -85,7 +85,7 @@ def inference_image_id(api, context, state, app_logger):
     g.sly_app.send_response(request_id, data=ann_json)
 
 
-@g.sly_app.post("/inference_batch_ids/")
+@g.app.post("/inference_batch_ids/")
 @sly.timeit
 def inference_batch_ids(api, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
@@ -106,3 +106,8 @@ def inference_batch_ids(api, context, state, app_logger):
 
     request_id = context["request_id"]
     g.sly_app.send_response(request_id, data=results)
+
+
+@g.app.get("/")
+def read_index(request: Request):
+    return g.templates.TemplateResponse('index.html', {'request': request})
