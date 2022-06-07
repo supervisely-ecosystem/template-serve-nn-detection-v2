@@ -1,17 +1,71 @@
-import random
 from typing import Dict, List, Tuple, Union
 import functools
 import os
 import sys
-import numpy as np
 import supervisely as sly
 
-import src.sly_globals as g
+import sly_globals as g
+
+
+def serve_detection(get_classes_and_tags_fn,
+                    get_session_info_fn,
+                    inference_fn,
+                    deploy_model_fn):
+    g.get_classes_and_tags_fn = get_classes_and_tags_fn
+    g.get_session_info_fn = get_session_info_fn
+    g.inference_fn = inference_fn
+    g.deploy_model_fn = deploy_model_fn
+
+    sly.logger.info("Supervisely settings", extra={
+        "context.teamId": g.team_id,
+        "context.workspaceId": g.workspace_id
+    })
+    input_image_path, output_image_path = get_image_from_args()
+    if input_image_path is not None: 
+        result_annotation = inference(input_image_path)
+        draw_demo_result(input_image_path, result_annotation, output_image_path)
+    else:
+        download_model()
+        deploy()
+        g.app.run()
+
+def deploy():
+    g.model = g.deploy_model_fn(g.local_weights_path)
+    sly.logger.info("Model has been deployed successfully")
+
+def inference(image_path: str) -> sly.Annotation:
+    """This is a demo function to show how to inference your custom model
+    on a selected image in supervsely.
+
+    Parameters
+    ----------
+    state : dict
+        Dict that stores application fields
+    image_path : str
+        Local path to image
+
+    Returns
+    -------
+    sly.Annotation
+        Supervisely annotation
+    """
+
+    predictions = g.inference_fn(image_path)
+    
+    image = sly.image.read(image_path)
+    # This function converts model predictions into supervisely annotation format
+    annotation = convert_preds_to_sly_annotation(
+        predictions,
+        img_size=image.shape[:2],
+    )
+
+    return annotation
 
 
 def get_image_from_args() -> Tuple[str, str]:
+    print(sys.argv)
     if len(sys.argv) == 1:
-        return None
+        return None, None
     if len(sys.argv) != 3: 
         raise AttributeError("Usage: main.py input_image_path output_image_path")
     if not os.path.exists(sys.argv[1]):
@@ -45,29 +99,24 @@ def send_error_data(func):
 @g.app.callback("get_output_classes_and_tags")
 @sly.timeit
 def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
+    model_meta = g.get_classes_and_tags_fn()
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=g.model_meta.to_json())
+    g.app.send_response(request_id, data=model_meta.to_json())
 
 
 @g.app.callback("get_custom_inference_settings")
 @sly.timeit
 def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
     request_id = context["request_id"]
-    g.app.send_response(request_id, data={"settings": g.default_settings_str})
+    g.app.send_response(request_id, data={})
 
 
 @g.app.callback("get_session_info")
 @sly.timeit
 @send_error_data
 def get_session_info(api: sly.Api, task_id, context, state, app_logger):
-    info = {
-        "app": "Serve Custom Detection Model Template",
-        "model_name": g.model_name,
-        "device": g.device,
-        "classes_count": len(g.model_meta.obj_classes),
-        "tags_count": len(g.model_meta.tag_metas),
-        "sliding_window_support": True
-    }
+
+    info = g.get_session_info_fn()
 
     request_id = context["request_id"]
     g.app.send_response(request_id, data=info)
@@ -84,7 +133,7 @@ def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
     local_image_path = os.path.join(g.app.data_dir, f"{sly.rand_str(15)}.{ext}")
     sly.fs.download(image_url, local_image_path)
 
-    ann = g.inference_fn(state=state, image_path=local_image_path)
+    ann = g.inference_fn(image_path=local_image_path)
 
     request_id = context["request_id"]
     g.app.send_response(request_id, data=ann.to_json())
@@ -97,7 +146,7 @@ def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
     image_path = os.path.join(g.app.data_dir, sly.rand_str(10) + image_info.name)
-    ann = g.inference_fn(state=state, image_path=image_path)
+    ann = g.inference_fn(image_path=image_path)
     sly.fs.silent_remove(image_path)
     
     request_id = context["request_id"]
@@ -114,126 +163,44 @@ def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
     api.image.download_paths(infos[0].dataset_id, ids, paths)
     results = []
     for image_path in paths:
-        ann = g.inference_fn(
-            state=state, image_path=image_path
-        )
+        ann = g.inference_fn(image_path=image_path)
         results.append(ann.to_json())
 
     request_id = context["request_id"]
     g.app.send_response(request_id, data=results)
 
 
-def check_settings(
-        settings: Dict[str, Union[str, int]]) -> None:
-    """
-    Check custom settings.
-
-    In our example it returns only confidence threshold
-
-    Parameters
-    ----------
-    settings : Dict[str, Union[str, int]]
-        Settings from .yaml file
-
-    Returns
-    -------
-    None
-    """
-    for key, value in g.default_settings.items():
-        if key not in settings:
-            sly.logger.warn(
-                "Field {!r} not found in inference settings. Use default value {!r}".format(
-                    key, value
-                )
-            )
-
-
-def generate_predictions(
-        image: np.ndarray
-) -> Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]:
-    """
-    Gets prediction bounding boxes, scores and classes.
-    We use randomly generated labels but you should get predictions from your model here.
-
-    Parameters
-    ----------
-    image : np.ndarray
-        input image in numpy array format
-
-    Returns
-    -------
-    Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
-        Tuple with 3 arrays with predictions: bounding boxes, scores and classes
-    """
-    img_height, img_width = image.shape[:2]
-
-    pred_bboxes = []
-    pred_scores = []
-    pred_classes = []
-
-    min_boxes_on_image = 1
-    max_boxes_on_image = 5
-    for _ in range(random.randint(min_boxes_on_image, max_boxes_on_image)):
-        x = np.random.randint(1, img_width - 1, size=(2,))
-        if np.all(x == x[0]):
-            x[0] += 1
-
-        y = np.random.randint(1, img_height - 1, size=(2,))
-        if np.all(y == y[0]):
-            y[0] += 1
-
-        left, top = x.min(), y.min()
-        right, bottom = x.max(), y.max()
-        pred_bboxes.append((top, left, bottom, right))
-
-        pred_score = random.random()
-        pred_scores.append(pred_score)
-
-        pred_class_idx = random.choice(list(g.model_id_classes_map.keys()))
-        pred_classes.append(pred_class_idx)
-    return pred_bboxes, pred_scores, pred_classes
-
-
 def convert_preds_to_sly_annotation(
-        pred_bboxes: List[Tuple[int, int, int, int]],
-        pred_scores: List[float],
-        pred_classes: List[int],
+        predictions: dict,
         img_size: Tuple[int, int],
-) -> Dict[str, Union[str, int]]:
+) -> sly.Annotation:
     """Convert model predictions to supervisely format annotation.
 
     Parameters
     ----------
-    pred_bboxes : List[Tuple[int, int, int, int]]
+    predictions : dict
         Prediction bounding boxes
-    pred_scores : List[float]
-        Prediction scores
-    pred_classes : List[int]
-        Prediction classes ids
     img_size : Tuple[int, int]
         height and width of the image
 
     Returns
     -------
-    Dict[str, Union[str, int]]
+    sly.Annotation
         Supervisely annotation in JSON format
     """
-    assert (
-            len(pred_bboxes) == len(pred_scores) == len(pred_classes)
-    ), "Length of prediction arrays is not equal."
-
     labels = []
-    for pred_box, pred_score, pred_class_idx in zip(
-            pred_bboxes, pred_scores, pred_classes
-    ):
-        top, left, bottom, right = pred_box
-        sly_rect = sly.Rectangle(top, left, bottom, right)
+    for prediction in predictions:
+        box = prediction["bbox"]
+        sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
         sly_obj_class = sly.ObjClass(
-            g.model_id_classes_map[pred_class_idx], sly.Rectangle
+            prediction["class"], sly.Rectangle
         )
-        sly_tag_meta = sly.TagMeta(g.confidence_tag_name, sly.TagValueType.ANY_NUMBER)
-        sly_tag = sly.Tag(sly_tag_meta, pred_score)
-        sly_tag_collection = sly.TagCollection([sly_tag])
+        if "confidence" in prediction.keys():
+            sly_tag_meta = sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
+            sly_tag = sly.Tag(sly_tag_meta, prediction["confidence"])
+            sly_tag_collection = sly.TagCollection([sly_tag])
+        else:
+            sly_tag_collection = sly.TagCollection([])
         sly_label = sly.Label(sly_rect, sly_obj_class, tags=sly_tag_collection)
         labels.append(sly_label)
 
@@ -241,67 +208,9 @@ def convert_preds_to_sly_annotation(
     return ann
 
 
-def postprocess_predictions(
-        pred_bboxes: List[Tuple[int, int, int, int]],
-        pred_scores: List[float],
-        pred_classes: List[int],
-        conf_thres: float = 0.5,
-) -> Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]:
-    """Process predictions with given confidence threshold.
-
-    Parameters
-    ----------
-    pred_bboxes : List[Tuple[int, int, int, int]]
-        Prediction bounding boxes
-    pred_scores : List[float]
-        Prediction scores
-    pred_classes : List[int]
-        Prediction classes ids
-    conf_thres : int, optional
-        Confidence threshold
-
-    Returns
-    -------
-    Tuple[List[Tuple[int, int, int, int]], List[float], List[int]]
-        Tuple with processed predictions
-    """
-    result_bboxes, result_scores, result_classes = [], [], []
-    for pred_box, pred_score, pred_class_idx in zip(
-            pred_bboxes, pred_scores, pred_classes
-    ):
-        if pred_score < conf_thres:
-            continue
-        result_bboxes.append(pred_box)
-        result_scores.append(pred_score)
-        result_classes.append(pred_class_idx)
-    return result_bboxes, result_scores, result_classes
-
-
-def construct_model_meta() -> None:
-    """Generate project meta from model classes names."""
-
-    colors = []
-    for i in range(len(g.model_classes)):
-        colors.append(sly.color.generate_rgb(exist_colors=colors))
-
-    obj_classes = [
-        sly.ObjClass(name, sly.Rectangle, color)
-        for name, color in zip(g.model_classes, colors)
-    ]
-    tags = [sly.TagMeta(g.confidence_tag_name, sly.TagValueType.ANY_NUMBER)]
-    meta = sly.ProjectMeta(
-        obj_classes=sly.ObjClassCollection(obj_classes),
-        tag_metas=sly.TagMetaCollection(tags),
-    )
-    g.model_meta = meta
-
-
 def download_model() -> None:
-    # TODO:
-    """Add description"""
-    if g.remote_weights_path is None:
-        # Template case without model
-        sly.logger.info("Model is not found. Template mode with random labels will be used.")
+    if not g.remote_weights_path.endswith(".pth"):
+        sly.logger.info("Model is not found. Template mode with example labels will be used.")
         return
 
     info = g.api.file.get_info_by_path(g.team_id, g.remote_weights_path)

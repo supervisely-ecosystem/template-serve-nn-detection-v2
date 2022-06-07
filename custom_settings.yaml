@@ -1,5 +1,0 @@
-# object confidence threshold
-confidence_threshold: 0.01
-
-# batch size (if you use batch inference)
-batch_size: 64

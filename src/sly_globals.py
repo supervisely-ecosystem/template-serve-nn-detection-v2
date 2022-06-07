@@ -1,14 +1,17 @@
 import os
 import sys
 import supervisely as sly
-import yaml
+import pathlib
 from supervisely.app.v1.app_service import AppService
 
 # Add app root directory to system paths
-app_root_directory = os.path.dirname(os.getcwd())
+app_root_directory = str(pathlib.Path(sys.argv[0]).parents[1])
+sly.logger.info(f"App root directory: {app_root_directory}")
 sys.path.append(app_root_directory)
-print(f"App root directory: {app_root_directory}")
-sly.logger.info(f'PYTHONPATH={os.environ.get("PYTHONPATH", "")}')
+
+source_path = os.path.join(app_root_directory, "src")
+sly.logger.info(f"Source directory: {source_path}")
+sys.path.append(source_path)
 
 # Use the following lines only for debug purposes
 from dotenv import load_dotenv
@@ -26,21 +29,10 @@ team_id = int(os.environ["context.teamId"])
 workspace_id = int(os.environ["context.workspaceId"])
 
 # Template model settings
-model_classes = ["person", "car", "dog"]  # this is an example list of custom nn model classes
 inference_fn = None
-model_id_classes_map = dict(enumerate(model_classes))
-confidence_tag_name = "confidence"
-model_meta: sly.ProjectMeta = None
-model_name = "Random boxes"
+get_classes_and_tags_fn = None
+get_session_info_fn = None
+deploy_model_fn = None
 device = None
-remote_weights_path = None
 local_weights_path = None
-# Use this for using model from team files
-# remote_weights_path = os.environ['modal.state.slyFile'] 
-
-# Read custom_settings.yaml file
-settings_path = os.path.join(app_root_directory, "custom_settings.yaml")
-sly.logger.info(f"Custom inference settings path: {settings_path}")
-with open(settings_path, "r") as file:
-    default_settings_str = file.read()
-    default_settings = yaml.safe_load(default_settings_str)
+remote_weights_path = os.environ['modal.state.slyFile'] 

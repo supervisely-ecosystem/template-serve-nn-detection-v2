@@ -1,98 +1,79 @@
 import supervisely as sly
-import src.helpers as helpers
-import src.sly_globals as g
+import helpers
+import sly_globals as g
 
 
-def inference( state: dict, image_path: str) -> sly.Annotation:
-    """This is a demo function to show how to inference your custom model
-    on a selected image in supervsely.
+def get_classes_and_tags():
+    classes = [
+        # Example
+        sly.ObjClass("person", sly.Rectangle),
+        sly.ObjClass("car", sly.Rectangle),
+        sly.ObjClass("bus", sly.Rectangle)
 
-    Parameters
-    ----------
-    state : dict
-        Dict that stores application fields
-    image_path : str
-        Local path to image
-
-    Returns
-    -------
-    sly.Annotation
-        Supervisely annotation
-    """
-    # Read image from local file
-    image = sly.image.read(path=image_path)
-
-    # Function generates random predictions in this template to demonstrate the functionality, 
-    # but you will need to replace implementation of the generate_predictions() 
-    # function to your own, using the inference of your own model
-    pred_bboxes, pred_scores, pred_classes = helpers.generate_predictions(image=image)
-    ##########################################
-    # INSERT YOUR CODE INSTEAD OF LINE ABOVE #
-    ##########################################
-
-    # The file custom_settings.yaml contains settings for postprocessing and 
-    # designed to store parameters
-    settings = state.get("settings", {})
-    helpers.check_settings(settings=settings)
-    conf_thres = settings.get(
-        "confidence_threshold", g.default_settings["confidence_threshold"]
-    )
-
+        # Put any needed classes here ....
+    ]
     
-    # This function performs post-processing of model predictions (for example, NMS)
-    result_bboxes, result_scores, result_classes = helpers.postprocess_predictions(
-        pred_bboxes=pred_bboxes,
-        pred_scores=pred_scores,
-        pred_classes=pred_classes,
-        conf_thres=conf_thres,
-    )
+    classes = sly.ObjClassCollection(classes)
 
+    tags = [
+        # Example: confidence tag for bounding boxes
+        sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
+    ]
+    tags = sly.TagMetaCollection(tags)
+    return sly.ProjectMeta(obj_classes=classes, tag_metas=tags)
     
-    # This function converts model predictions into supervisely annotation format
-    annotation = helpers.convert_preds_to_sly_annotation(
-        pred_bboxes=result_bboxes,
-        pred_scores=result_scores,
-        pred_classes=result_classes,
-        img_size=image.shape[:2],
-    )
-
-    return annotation
-
-
-def deploy_model() -> None:
-    """
-    Add comment
-    """
-    #####################
-    # CHANGE CODE BELOW #
-    #####################
-    pass
-    # g.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # g.model_classes = get_classes_from_model_config()
-    # g.model_id_classes_map = dict(enumerate(g.model_classes))
-    # g.model_name = "Your Custom Model Name"
-
-    # g.model = init_model(weigths=g.local_weights_path, device=g.device)
-    # sly.logger.info("🟩 Model has been successfully deployed")
+    
+def get_session_info():
+    return {
+        # Recommended info values
+        "app": "Serve Custom Detection Model Template",
+        "model_name": "Put your model name",
+        "device": "cpu", 
+        "classes_count": 3,
+        "tags_count": 1,
+        "sliding_window_support": False
+        # Put any key-value that you want to ....
+    }
 
 
+def inference(image_path):
+    image = sly.image.read(path=image_path) # shape: [H, W, 3], RGB
+    
+    #########################
+    # INSERT YOUR CODE HERE #
+    #########################
+    # predictions = model_inference(image)
 
+    # example (remove it when you'll use your own predictions)
+    predictions = [
+        {
+            "bbox": [50, 100, 77, 145], # [top, left, bottom, right]
+            "class": "person", # class name like in get_classes_and_tags() function
+            "confidence": 0.88 # optional 
+        }
+    ]
+    return predictions
+    
+
+def deploy_model(model_weights_path):
+    #########################
+    # INSERT YOUR CODE HERE #
+    #########################
+    # example:
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = init_model(weigths=model_weights_path, device=device)
+    
+    model = None
+    return model
+    
+    
 def main():
-    sly.logger.info("Supervisely settings", extra={
-        "context.teamId": g.team_id,
-        "context.workspaceId": g.workspace_id
-    })
-    input_image_path, output_image_path = helpers.get_image_from_args()
-    g.inference_fn = inference
-    if input_image_path is not None: 
-        state = {}
-        result_annotation = g.inference_fn(state, input_image_path)
-        helpers.draw_demo_result(input_image_path, result_annotation, output_image_path)
-    else:
-        helpers.download_model()
-        deploy_model()
-        helpers.construct_model_meta()
-        g.app.run()
+    helpers.serve_detection(
+        get_session_info, 
+        get_classes_and_tags, 
+        inference, 
+        deploy_model
+    )
 
 
 if __name__ == "__main__":
