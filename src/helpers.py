@@ -7,12 +7,12 @@ import supervisely as sly
 import src.sly_globals as g
 
 
-def serve_detection(get_classes_and_tags_fn,
-                    get_session_info_fn,
+def serve_detection(get_session_info_fn,
+                    get_classes_and_tags_fn,
                     inference_fn,
                     deploy_model_fn):
-    g.get_classes_and_tags_fn = get_classes_and_tags_fn
     g.get_session_info_fn = get_session_info_fn
+    g.get_classes_and_tags_fn = get_classes_and_tags_fn
     g.inference_fn = inference_fn
     g.deploy_model_fn = deploy_model_fn
 
