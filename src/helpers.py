@@ -133,7 +133,7 @@ def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
     local_image_path = os.path.join(g.app.data_dir, f"{sly.rand_str(15)}.{ext}")
     sly.fs.download(image_url, local_image_path)
 
-    ann = g.inference_fn(image_path=local_image_path)
+    ann = inference(image_path=local_image_path)
 
     request_id = context["request_id"]
     g.app.send_response(request_id, data=ann.to_json())
@@ -146,7 +146,7 @@ def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
     image_path = os.path.join(g.app.data_dir, sly.rand_str(10) + image_info.name)
-    ann = g.inference_fn(image_path=image_path)
+    ann = inference(image_path=image_path)
     sly.fs.silent_remove(image_path)
     
     request_id = context["request_id"]
@@ -163,7 +163,7 @@ def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
     api.image.download_paths(infos[0].dataset_id, ids, paths)
     results = []
     for image_path in paths:
-        ann = g.inference_fn(image_path=image_path)
+        ann = inference(image_path=image_path)
         results.append(ann.to_json())
 
     request_id = context["request_id"]
