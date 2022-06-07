@@ -131,3 +131,4 @@ dmypy.json
 .pyre/
 
 secret_debug.env
+src/debug

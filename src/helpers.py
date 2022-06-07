@@ -223,13 +223,8 @@ def inference(
     return ann_json
 
 
-def construct_model_meta(model_classes: List[str]) -> sly.ProjectMeta:
+def construct_model_meta() -> sly.ProjectMeta:
     """Generate project meta from model classes list.
-
-    Parameters
-    ----------
-    model_classes : List[str]
-        List of model classes
 
     Returns
     -------
@@ -237,16 +232,16 @@ def construct_model_meta(model_classes: List[str]) -> sly.ProjectMeta:
         Supervisely project meta
     """
     colors = []
-    for i in range(len(model_classes)):
+    for i in range(len(g.model_classes)):
         colors.append(sly.color.generate_rgb(exist_colors=colors))
 
     obj_classes = [
         sly.ObjClass(name, sly.Rectangle, color)
-        for name, color in zip(model_classes, colors)
+        for name, color in zip(g.model_classes, colors)
     ]
     tags = [sly.TagMeta(g.confidence_tag_name, sly.TagValueType.ANY_NUMBER)]
     meta = sly.ProjectMeta(
         obj_classes=sly.ObjClassCollection(obj_classes),
         tag_metas=sly.TagMetaCollection(tags),
     )
-    return meta
+    g.meta = meta
