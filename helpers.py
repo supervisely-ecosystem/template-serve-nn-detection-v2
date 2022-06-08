@@ -115,18 +115,24 @@ def convert_preds_to_sly_annotation(
             raise ValueError(f"Prediction does not contain class name. Prediction dict: {prediction}")
         box = prediction["bbox"]
         sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
-        try:
-            sly_obj_class = model_meta.get_obj_class(prediction["class"])
-        except KeyError as e:
-            raise ValueError("Predicted class name was not added to \
-                get_classes_and_tags(). Please add this class and try again.")
+        if model_meta is not None:
+            try:
+                sly_obj_class = model_meta.get_obj_class(prediction["class"])
+            except KeyError as e:
+                raise ValueError("Predicted class name was not added to \
+                    get_classes_and_tags(). Please add this class and try again.")
+        else:
+            sly_obj_class = sly.ObjClass(prediction["class"], sly.Rectangle)
              
         if "confidence" in prediction.keys():
-            try:
-                sly_tag_meta = model_meta.get_tag_meta("confidence")
-            except KeyError as e:
-                raise ValueError("Predicted confidence tag name was not added to \
-                get_classes_and_tags(). Please add this tag and try again.")
+            if model_meta is not None:
+                try:
+                    sly_tag_meta = model_meta.get_tag_meta("confidence")
+                except KeyError as e:
+                    raise ValueError("Predicted confidence tag name was not added to \
+                    get_classes_and_tags(). Please add this tag and try again.")
+            else:
+                sly_tag_meta = sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
                 
             if not isinstance(prediction["confidence"], float):
                 raise TypeError(f"Predicted confidence of type {type(prediction['confidence'])} \

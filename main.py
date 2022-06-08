@@ -37,7 +37,6 @@ def get_session_info() -> Dict:
 
 
 def inference(image_path: str) -> List[Dict]:
-    global my_model
     image = sly.image.read(path=image_path) # shape: [H, W, 3], RGB
     
     #########################
