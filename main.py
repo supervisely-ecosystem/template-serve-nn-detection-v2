@@ -1,7 +1,7 @@
 import os
 from typing import Dict, List
 import supervisely as sly
-import src.helpers as helpers
+import helpers
 
 my_model = None
 
@@ -69,7 +69,7 @@ def deploy_model(model_weights_path: str) -> None:
     
     
 def main():
-    if "TASK_ID" in os.environ:
+    if "TASK_ID" not in os.environ:
         model_weights_path = "/my-folder/my_weights.pth"
         input_image_path = "/my-folder/my_image.png"
         result_image_path = "/my-folder/result_image.png"
@@ -77,7 +77,6 @@ def main():
         predictions = inference(input_image_path)
         helpers.draw_demo_result(predictions, input_image_path, result_image_path)
     else:
-
         helpers.serve_detection(
             get_session_info, 
             get_classes_and_tags, 

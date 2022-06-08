@@ -5,39 +5,76 @@ import sys
 import supervisely as sly
 from supervisely.app.v1.app_service import AppService
 
-import src.sly_globals as g
+# Add app root directory to system paths
+app_root_directory = os.getcwd()
+sly.logger.info(f"App root directory: {app_root_directory}")
+sys.path.append(app_root_directory)
+
+# Use the following lines only for debug purposes
+# from dotenv import load_dotenv
+# debug_env_path = os.path.join(app_root_directory, "debug.env")
+# secret_debug_env_path = os.path.join(app_root_directory, "secret_debug.env")
+# load_dotenv(debug_env_path)
+# load_dotenv(secret_debug_env_path, override=True)
+
+api = None
+app = None
+team_id = None
+workspace_id = None
+
+# Template model settings
+inference_fn = None
+get_classes_and_tags_fn = None
+get_session_info_fn = None
+deploy_model_fn = None
+model_meta = None
+local_weights_path = None
+remote_weights_path = ""
+if "modal.state.slyFile" in os.environ:
+    remote_weights_path = os.environ['modal.state.slyFile'] 
 
 
-def serve_detection(get_session_info_fn,
-                    get_classes_and_tags_fn,
-                    inference_fn,
-                    deploy_model_fn):
-    g.get_session_info_fn = get_session_info_fn
-    g.get_classes_and_tags_fn = get_classes_and_tags_fn
-    g.inference_fn = inference_fn
-    g.deploy_model_fn = deploy_model_fn
+def serve_detection(get_info_fn,
+                    get_meta_fn,
+                    inf_fn,
+                    deploy_fn):
+    global api, app, team_id, workspace_id, get_session_info_fn, \
+        get_classes_and_tags_fn, inference_fn, deploy_model_fn, model_meta
+
+    get_session_info_fn = get_info_fn
+    get_classes_and_tags_fn = get_meta_fn
+    inference_fn = inf_fn
+    deploy_model_fn = deploy_fn
 
     sly.logger.info("Supervisely settings", extra={
-        "context.teamId": g.team_id,
-        "context.workspaceId": g.workspace_id
+        "context.teamId": team_id,
+        "context.workspaceId": workspace_id
     })
 
     # App initialization
-    g.api = sly.Api.from_env()
-    g.app = AppService()
+    api = sly.Api.from_env()
+    app = AppService()
+    app._add_callback("get_output_classes_and_tags", get_output_classes_and_tags)
+    app._add_callback("get_custom_inference_settings", get_custom_inference_settings)
+    app._add_callback("get_session_info", get_session_info)
+    app._add_callback("inference_image_url", inference_image_id)
+    app._add_callback("inference_batch_ids", inference_batch_ids)
+    app._add_callback("inference_image_url", inference_image_url)
 
     # Supervisely variables
-    g.team_id = int(os.environ["context.teamId"])
-    g.workspace_id = int(os.environ["context.workspaceId"])
+    team_id = int(os.environ["context.teamId"])
+    workspace_id = int(os.environ["context.workspaceId"])
 
-    g.model_meta = get_classes_and_tags_fn()
+    model_meta = get_classes_and_tags_fn()
     download_model()
     deploy()
-    g.app.run()
+    app.run()
+
 
 def deploy():
-    g.deploy_model_fn(g.local_weights_path)
+    deploy_model_fn(local_weights_path)
     sly.logger.info("Model has been deployed successfully")
+
 
 def inference(image_path: str) -> sly.Annotation:
     """This is a demo function to show how to inference your custom model
@@ -56,7 +93,7 @@ def inference(image_path: str) -> sly.Annotation:
         Supervisely annotation
     """
 
-    predictions = g.inference_fn(image_path)
+    predictions = inference_fn(image_path)
     
     image = sly.image.read(image_path)
     # This function converts model predictions into supervisely annotation format
@@ -69,8 +106,8 @@ def inference(image_path: str) -> sly.Annotation:
 
 
 def draw_demo_result(predictions, input_image_path, output_image_path) -> None:
-    annotation = convert_preds_to_sly_annotation(predictions)
     image = sly.image.read(path=input_image_path)
+    annotation = convert_preds_to_sly_annotation(predictions, image.shape[:2])
     for label in annotation.labels:
         label.draw_contour(image, thickness=5)
     
@@ -86,39 +123,36 @@ def send_error_data(func):
             value = func(*args, **kwargs)
         except Exception as e:
             request_id = kwargs["context"]["request_id"]
-            g.app.send_response(request_id, data={"error": repr(e)})
+            app.send_response(request_id, data={"error": repr(e)})
         return value
 
     return wrapper
 
 
-@g.app.callback("get_output_classes_and_tags")
 @sly.timeit
 def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
-    g.model_meta = g.get_classes_and_tags_fn()
+    global model_meta
+    model_meta = get_classes_and_tags_fn()
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=g.model_meta.to_json())
+    app.send_response(request_id, data=model_meta.to_json())
 
 
-@g.app.callback("get_custom_inference_settings")
 @sly.timeit
 def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
     request_id = context["request_id"]
-    g.app.send_response(request_id, data={})
+    app.send_response(request_id, data={})
 
 
-@g.app.callback("get_session_info")
 @sly.timeit
 @send_error_data
 def get_session_info(api: sly.Api, task_id, context, state, app_logger):
 
-    info = g.get_session_info_fn()
+    info = get_session_info_fn()
 
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=info)
+    app.send_response(request_id, data=info)
 
 
-@g.app.callback("inference_image_url")
 @sly.timeit
 def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
@@ -126,36 +160,34 @@ def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
 
     ext = sly.fs.get_file_ext(image_url)
     assert ext in ["png", "jpg", "jpeg"]
-    local_image_path = os.path.join(g.app.data_dir, f"{sly.rand_str(15)}.{ext}")
+    local_image_path = os.path.join(app.data_dir, f"{sly.rand_str(15)}.{ext}")
     sly.fs.download(image_url, local_image_path)
 
     ann = inference(image_path=local_image_path)
 
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=ann.to_json())
+    app.send_response(request_id, data=ann.to_json())
 
 
-@g.app.callback("inference_image_id")
 @sly.timeit
 def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
-    image_path = os.path.join(g.app.data_dir, sly.rand_str(10) + image_info.name)
+    image_path = os.path.join(app.data_dir, sly.rand_str(10) + image_info.name)
     ann = inference(image_path=image_path)
     sly.fs.silent_remove(image_path)
     
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=ann.to_json())
+    app.send_response(request_id, data=ann.to_json())
 
 
-@g.app.callback("inference_batch_ids")
 @sly.timeit
 def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     ids = state["batch_ids"]
     infos = api.image.get_info_by_id_batch(ids)
-    paths = [os.path.join(g.app.data_dir, sly.rand_str(10) + info.name) for info in infos]
+    paths = [os.path.join(app.data_dir, sly.rand_str(10) + info.name) for info in infos]
     api.image.download_paths(infos[0].dataset_id, ids, paths)
     results = []
     for image_path in paths:
@@ -163,7 +195,7 @@ def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
         results.append(ann.to_json())
 
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=results)
+    app.send_response(request_id, data=results)
 
 
 def convert_preds_to_sly_annotation(
@@ -188,8 +220,8 @@ def convert_preds_to_sly_annotation(
     for prediction in predictions:
         box = prediction["bbox"]
         sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
-        if isinstance(g.model_meta, sly.ProjectMeta):
-            sly_obj_class = g.model_meta.get_obj_class(prediction["class"])
+        if isinstance(model_meta, sly.ProjectMeta):
+            sly_obj_class = model_meta.get_obj_class(prediction["class"])
         else:
             sly_obj_class = sly.ObjClass(
                 prediction["class"], sly.Rectangle
@@ -208,21 +240,22 @@ def convert_preds_to_sly_annotation(
 
 
 def download_model() -> None:
-    if not g.remote_weights_path.endswith(".pth"):
+    global local_weights_path
+    if not remote_weights_path.endswith(".pth"):
         sly.logger.info("Model is not found. Template mode with example labels will be used.")
         return
 
-    info = g.api.file.get_info_by_path(g.team_id, g.remote_weights_path)
+    info = api.file.get_info_by_path(team_id, remote_weights_path)
     if info is None:
-        raise FileNotFoundError(f"Weights file not found: {g.remote_weights_path}")
+        raise FileNotFoundError(f"Weights file not found: {remote_weights_path}")
 
     sly.logger.info("Downloading model weights...")
-    g.local_weights_path = os.path.join(g.app.data_dir, sly.fs.get_file_name_with_ext(g.remote_weights_path))
-    g.api.file.download(
-        g.team_id,
-        g.remote_weights_path,
-        g.local_weights_path,
-        cache=g.app.cache
+    local_weights_path = os.path.join(app.data_dir, sly.fs.get_file_name_with_ext(remote_weights_path))
+    api.file.download(
+        team_id,
+        remote_weights_path,
+        local_weights_path,
+        cache=app.cache
     )
 
     sly.logger.info("Model has been successfully downloaded")
