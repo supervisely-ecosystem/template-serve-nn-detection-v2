@@ -7,11 +7,9 @@
 <p align="center">
   <a href="#overview">Overview</a> •
   <a href="#preparation">Preparation</a> •
-  <a href="#how-to-use">How To Use</a> •
+  <a href="#how-to-develop">How To Develop</a> •
   <a href="#how-to-add-model-as-app-enterprise-edition-only">How To Add Model As App</a> •
-  <a href="#how-to-run">How To Run</a> •
-  <a href="#related-apps">Related Apps</a> •
-  <a href="#result">Result</a>
+  <a href="#how-to-run">How To Run</a>
 </p>
 
 
