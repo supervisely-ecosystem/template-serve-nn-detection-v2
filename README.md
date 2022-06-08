@@ -111,7 +111,7 @@ python main.py
 
 <img src="https://user-images.githubusercontent.com/48913536/172667762-5ffbb929-d28d-4036-a52e-855fb402fdf1.png" style="width:50%;"/>
 
-**Step 4.** Add one of the [related apps](https://github.com/supervisely-ecosystem/template-serve-nn-detection/edit/dev-readme/README.md#related-apps) to your team from Ecosystem and run it.
+**Step 4.** Add one of the related apps to your team from Ecosystem and run it.
 
 **Step 5.** Open running applier app and connect to app session with served model
 
