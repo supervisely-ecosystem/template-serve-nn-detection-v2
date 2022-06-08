@@ -52,6 +52,8 @@ pip install -r requirements.txt
 
 **Note:** we provide a docker image with cuda runtime and it's dependencies, but if you need to use something specific, add it to the `requirements.txt`, or use your own docker image, please contact supervisely technical support for details
 
+**Note 2:** you can change application name in `config.json`.
+
 # How To Develop
 
 **Note:** recommended Python version >= 3.8
