@@ -9,7 +9,7 @@
     "docker_image": "supervisely/base-py-sdk:latest",
     "task_location": "application_sessions",
     "icon_background": "#FFFFFF",
-    "icon": "https://imgur.com/a9u0M3Y.png",
+    "icon": "https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/icon.png",
     "icon_cover": true,
     "need_gpu": true,
     "headless": true,
@@ -21,5 +21,6 @@
     },
     "session_tags": [
       "deployed_nn"
-  ]
+  ],
+    "poster": "https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/poster.png"
 }
