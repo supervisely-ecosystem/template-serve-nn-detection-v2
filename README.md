@@ -1,14 +1,17 @@
 <div align="center" markdown>
 
-<img src="" style="width: 100%;"/>
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/poster.png" style="width: 100%;"/>
 
-# Template Serve NN Detection
+# Serve Custom Detection Model Template
 
 <p align="center">
-  <a href="#Overview">Overview</a> •
-  <a href="#How-To-Run">How To Run</a> •
-  <a href="#Related-Apps">Related Apps</a> •
-  <a href="#Result">Result</a>
+  <a href="#overview">Overview</a> •
+  <a href="#preparation">Preparation</a> •
+  <a href="#how-to-use">How To Use</a> •
+  <a href="#how-to-add-model-as-app-enterprise-edition-only">How To Add Model As App</a> •
+  <a href="#how-to-run">How To Run</a> •
+  <a href="#related-apps">Related Apps</a> •
+  <a href="#result">Result</a>
 </p>
 
 
@@ -23,152 +26,87 @@
 
 # Overview
 
-Template Serve NN Detection app is designed for **developers** and can be used as a starting point for creating an application for serving your own custom NN models on Supervisely.
+Template Serve NN Detection app is designed for **developers** and can be used as a starting point for creating an application for serving your own detection NN models on Supervisely.
 
-By default template app generates random predictions with random scores to demonstrate the functionality, in order to implement your custom model, you will need to edit **`src/main.py`**. Inference results will be automatically converted to [supervisely annotation format](https://docs.supervise.ly/data-organization/00_ann_format_navi).
+# Preparation
 
-# How To Run
+**Step 1.** Make a fork from this repository
 
-**Note:** recommended Python version for supervisely is 3.8.x
+**Step 2.** Clone repository to your computer
 
-## Common steps for demo and local run:
-
-**Step 1.** In order to run the app you must configure environment variables. Learn more about configuring applciation environment in our [app creation guide](https://github.com/supervisely-ecosystem/how-to-create-app)
-  * **a.** Add [While True Script](https://ecosystem.supervise.ly/apps/while-true-script) app from Ecosystem to your Team and Run it on your agent (watch step **e.** for more info).
-  * **b.** [Copy `Task ID` of `While True Script App` to `debug.env` file](https://ecosystem.supervise.ly/apps/while-true-script)
-  * **c.** Copy your `Team` and `Workspace` IDs to corresponding variables in `debug.env` : `context.teamId=XXX`,  `context.workspaceId=XXX`
-  * **d.** Create `modal.state.slyFile="empty"` variable in debug.env
-  * **e.** Add variables to `debug.env` to store app data and cache: `DEBUG_APP_DIR="/path/to/data_dir"`, `DEBUG_CACHE_DIR="/path/to/cache_dir"`
-  * **f.** Create `secret_debug.env` file in app root dir, your personal API tokens will be stored here. Follow this [video guide](https://github.com/supervisely-ecosystem/how-to-create-app#2-hyper-quickstart-guide) to create `secret_debug.env`.
-
-`.env` files should look like these:
-
-`debug.env`
-```
-PYTHONUNBUFFERED=1
-
-TASK_ID=XXX
-
-context.teamId=XXX
-context.workspaceId=XXX
-
-modal.state.slyFile = "empty"
-
-DEBUG_APP_DIR="/path/to/data_dir"
-DEBUG_CACHE_DIR="/path/to/cache_dir"
-
-SERVER_ADDRESS="put your value here"
-API_TOKEN="put your value here"
-AGENT_TOKEN="put your value here"
-```
-
-`secret_debug.env`
-```
-SERVER_ADDRESS="https://app.supervise.ly/" # or enterprise instance
-API_TOKEN="xPxxxxxeOtqgjI5IHgVZgHdBgpYa0xxxxxxxxxxxxuuJXaoIq3Jit7TAbiQLxxxxxxxxxxxxtNpIQ2sDtsoxxxxxHjKlf1TNGDSexxxxiiAxSToxxbUxCxxxD50xxxxX"
-AGENT_TOKEN="xxxkM8xxQxxxTxxxsNUEXxxxxMoxxxxx"
-```
-
-**Step 2.** Create python virtual environment by running the following command from the application root directory in terminal:
+**Step 3.** Open repo directory and create python virtual environment by running the following command from the application root directory in terminal:
 
 ```bash
 python -m venv venv
 ```
 
-**Step 3.** Activate venv:
+**Step 4.** Activate virtual environment:
 
 ```bash
 source venv/bin/activate
 ```
 
-**Step 4.** Install requirements.txt:
+**Step 5.** Install requirements.txt:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Step 5.** Make sure you've edited `main.py`, without edits it will generate random predictions
+**Note:** we provide a docker image with cuda runtime and it's dependencies, but if you need to use something specific, add it to the `requirements.txt`, or use your own docker image, please contact supervisely technical support for details
 
-## Demo run:
+# How To Develop
 
-**Step 1.** Use the following command in terminal to move to `src` directory:
+**Note:** recommended Python version >= 3.8
 
-```bash
-cd src
-```
+**Details:**
+By default template app generates demo predictions to demonstrate the functionality. In order to implement your custom model, you will need to edit `main.py` file only. 
 
-**Step 2.** Run `main.py` with arguments from terminal:
+`main.py` - contains 4 functions with commentaries to help you implement your custom nn model:
 
-```bash
-python main.py /path/to/original/image /prediction/image/save/path
-```
+* `get_classes_and_tags()` - constructs ProjectMeta object with specified model classes and tags.
+* `get_session_info()` - generates model info dict with any parameters (see recommended parameters in file).
+* `inference(image_path)` - this functions gets input image path and return model predictions on this image. See predictions format in file. Inference results will be automatically converted to [supervisely annotation format](https://docs.supervise.ly/data-organization/00_ann_format_navi).
+* `deploy_model(model_weights_path)` - function initializes model to be ready to get input data for inference.
 
-## Local run:
+**Step 1.** Make sure you've edited `main.py`, without edits it will generate demo predictions
 
-**Step 1.** Add one of the [related apps](https://github.com/supervisely-ecosystem/template-serve-nn-detection/edit/dev-readme/README.md#related-apps) to your team from Ecosystem and run it.
-
-**Step 2. Optional** Locate your custom nn model in Team Files and copy it's path to `modal.state.slyFile="/path/to/nn_model.pth"` variable in `debug.env` file in the app root directory. If you skip this step, app will generate random predictions.
-
-
-**Step 3.** Use the following command in terminal to move to `src` directory:
-
-```bash
-cd src
-```
-
-**Step 4.** Run `main.py` from terminal:
+**Step 2.** Run `main.py` from terminal or by using your IDE interface:
 
 ```bash
 python main.py
 ```
 
-**Step 5.** Open running applier app and connect to app session with served model
+**Step 3.** When your model is ready, add additional modules and packages that are required to run your served model to `requirements.txt`
 
-<div>
-  <table>
-    <tr style="width: 100%">
-      <td>
-        <b>NN Image Labeling</b>
-        <img src="" style="width:100%;"/>
-      </td>
-      <td>
-        <b>Apply NN to Images Project</b>
-        <img src="" style="width:100%;"/>
-      </td>
-    </tr>
-  </table>
-</div>
+**Step 4.** Add your model as private app to Supervisely Ecosystem
 
-**Step 6.** Apply NN model to image or whole project/dataset
+# How To Add Model As App [Enterprise Edition only]
 
-<div>
-  <table>
-    <tr style="width: 100%">
-      <td>
-        <b>NN Image Labeling</b>
-        <img src="" style="width:100%;"/>
-      </td>
-      <td>
-        <b>Apply NN to Images Project</b>
-        <img src="" style="width:100%;"/>
-      </td>
-    </tr>
-  </table>
-</div>
+**Step 1.** Go to Ecosystem page and click on `private apps`
 
-## Instance run:
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-1.png" style="width:80%;"/>
 
-**Step 1.** Add [Template Serve NN Detection](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Ftemplate-serve-nn-detection) to your team from Ecosystem
+**Step 2.** Click `+ Add private app` button
 
-<img src="" style="width:100%;"/>
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-2.png" style="width:80%;"/>
 
-**Step 2.** Run the application from the context menu of `pth` file.
+**Step 3.** Copy and paste repository url and generated [github/gitlab personal token](https://docs.supervise.ly/enterprise-edition/advanced-tuning/private-apps) to modal window
 
-<img src="" style="width:100%;"/>
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-3.png" style="width:50%;"/>
+
+# How To Run:
+
+**Step 1.** Add app with implemented custom nn model to your team from Ecosystem
+
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/template-serve-nn-detection" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/thumb.png" width="500px" style='padding-bottom: 20px'/>  
+
+**Step 2.** Run the application from the context menu of `.pth` file. If you are running application from file with different than `.pth` extension, app will use demo model
+
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-2.png" style="width:80%;"/>
 
 **Step 3.** Press the Run button in the modal window
 
-<img src="" style="width:100%;"/>
+<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/modal.png" style="width:50%;"/>
 
 **Step 4.** Add one of the [related apps](https://github.com/supervisely-ecosystem/template-serve-nn-detection/edit/dev-readme/README.md#related-apps) to your team from Ecosystem and run it.
 
@@ -179,43 +117,26 @@ python main.py
     <tr style="width: 100%">
       <td>
         <b>NN Image Labeling</b>
-        <img src="" style="width:100%;"/>
+        <img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-image-connect.png" style="width:100%;"/>
       </td>
       <td>
         <b>Apply NN to Images Project</b>
-        <img src="" style="width:100%;"/>
+        <img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-project-connect.png" style="width:100%;"/>
       </td>
     </tr>
   </table>
 </div>
 
-**Step 6.** Apply NN model to image or whole project/dataset
+**Step 6.** Your served model is ready to apply. 
 
-<div>
-  <table>
-    <tr style="width: 100%">
-      <td>
-        <b>NN Image Labeling</b>
-        <img src="" style="width:100%;"/>
-      </td>
-      <td>
-        <b>Apply NN to Images Project</b>
-        <img src="" style="width:100%;"/>
-      </td>
-    </tr>
-  </table>
-</div>
+Once you integrated serving app for your model, you can use any available inference interfaces in Ecosystem:
 
-# Related apps
-
-Learn how to use served models in the corresponding apps:
 
 * [NN Image Labeling](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
-* [Apply NN to Images Project](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project**
 
-# Result
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/annotation-tool" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/related-apps-apply-to-image-thumb.png" width="450px" style='padding-bottom: 20px'/>  
 
-<img src="" style="width:80%;"/>
+* [Apply NN to Images Project](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
 
-
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/project-dataset" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/related-apps-apply-to-project-thumb.png" width="450px" style='padding-bottom: 20px'/>  
 
