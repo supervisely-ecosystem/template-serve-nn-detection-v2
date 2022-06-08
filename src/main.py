@@ -1,29 +1,29 @@
+import os
+from typing import Dict, List
 import supervisely as sly
-import src.sly_globals as g
 import src.helpers as helpers
 
+my_model = None
 
-def get_classes_and_tags():
-    classes = [
+def get_classes_and_tags() -> sly.ProjectMeta:
+    classes = sly.ObjClassCollection([
         # Example
         sly.ObjClass("person", sly.Rectangle),
         sly.ObjClass("car", sly.Rectangle),
         sly.ObjClass("bus", sly.Rectangle)
 
         # Put any needed classes here ....
-    ]
-    
-    classes = sly.ObjClassCollection(classes)
+    ])
 
-    tags = [
+    tags = sly.TagMetaCollection([
         # Example: confidence tag for bounding boxes
         sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
-    ]
-    tags = sly.TagMetaCollection(tags)
+    ])
+
     return sly.ProjectMeta(obj_classes=classes, tag_metas=tags)
     
     
-def get_session_info():
+def get_session_info() -> Dict:
     return {
         # Recommended info values
         "app": "Serve Custom Detection Model Template",
@@ -36,13 +36,14 @@ def get_session_info():
     }
 
 
-def inference(image_path):
+def inference(image_path: str) -> List[Dict]:
+    global my_model
     image = sly.image.read(path=image_path) # shape: [H, W, 3], RGB
     
     #########################
     # INSERT YOUR CODE HERE #
     #########################
-    # predictions = model_inference(image)
+    # predictions = my_model(image)
 
     # example (remove it when you'll use your own predictions)
     predictions = [
@@ -55,25 +56,34 @@ def inference(image_path):
     return predictions
     
 
-def deploy_model(model_weights_path):
+def deploy_model(model_weights_path: str) -> None:
+    global my_model
     #########################
     # INSERT YOUR CODE HERE #
     #########################
     # example:
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model = init_model(weigths=model_weights_path, device=device)
+    # my_model = init_model(weigths=model_weights_path, device=device)
     
-    model = None
-    return model
+    my_model = None
     
     
 def main():
-    helpers.serve_detection(
-        get_session_info, 
-        get_classes_and_tags, 
-        inference, 
-        deploy_model
-    )
+    if "TASK_ID" in os.environ:
+        model_weights_path = "/my-folder/my_weights.pth"
+        input_image_path = "/my-folder/my_image.png"
+        result_image_path = "/my-folder/result_image.png"
+        deploy_model(model_weights_path)
+        predictions = inference(input_image_path)
+        helpers.draw_demo_result(predictions, input_image_path, result_image_path)
+    else:
+
+        helpers.serve_detection(
+            get_session_info, 
+            get_classes_and_tags, 
+            inference, 
+            deploy_model
+        )
 
 
 if __name__ == "__main__":

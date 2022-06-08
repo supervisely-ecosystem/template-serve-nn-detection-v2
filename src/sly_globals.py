@@ -2,7 +2,6 @@ import os
 import sys
 import supervisely as sly
 import pathlib
-from supervisely.app.v1.app_service import AppService
 
 # Add app root directory to system paths
 app_root_directory = str(pathlib.Path(sys.argv[0]).parents[1])
@@ -16,13 +15,10 @@ sys.path.append(app_root_directory)
 # load_dotenv(debug_env_path)
 # load_dotenv(secret_debug_env_path, override=True)
 
-# App initialization
-api = sly.Api.from_env()
-app = AppService()
-
-# Supervisely variables
-team_id = int(os.environ["context.teamId"])
-workspace_id = int(os.environ["context.workspaceId"])
+api = None
+app = None
+team_id = None
+workspace_id = None
 
 # Template model settings
 inference_fn = None
@@ -30,6 +26,7 @@ get_classes_and_tags_fn = None
 get_session_info_fn = None
 deploy_model_fn = None
 device = None
+model_meta = None
 local_weights_path = None
 remote_weights_path = ""
 if "modal.state.slyFile" in os.environ:

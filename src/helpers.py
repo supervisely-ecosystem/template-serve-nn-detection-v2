@@ -3,6 +3,7 @@ import functools
 import os
 import sys
 import supervisely as sly
+from supervisely.app.v1.app_service import AppService
 
 import src.sly_globals as g
 
@@ -20,17 +21,22 @@ def serve_detection(get_session_info_fn,
         "context.teamId": g.team_id,
         "context.workspaceId": g.workspace_id
     })
-    input_image_path, output_image_path = get_image_from_args()
-    if input_image_path is not None: 
-        result_annotation = inference(input_image_path)
-        draw_demo_result(input_image_path, result_annotation, output_image_path)
-    else:
-        download_model()
-        deploy()
-        g.app.run()
+
+    # App initialization
+    g.api = sly.Api.from_env()
+    g.app = AppService()
+
+    # Supervisely variables
+    g.team_id = int(os.environ["context.teamId"])
+    g.workspace_id = int(os.environ["context.workspaceId"])
+
+    g.model_meta = get_classes_and_tags_fn()
+    download_model()
+    deploy()
+    g.app.run()
 
 def deploy():
-    g.model = g.deploy_model_fn(g.local_weights_path)
+    g.deploy_model_fn(g.local_weights_path)
     sly.logger.info("Model has been deployed successfully")
 
 def inference(image_path: str) -> sly.Annotation:
@@ -62,18 +68,8 @@ def inference(image_path: str) -> sly.Annotation:
     return annotation
 
 
-def get_image_from_args() -> Tuple[str, str]:
-    print(sys.argv)
-    if len(sys.argv) == 1:
-        return None, None
-    if len(sys.argv) != 3: 
-        raise AttributeError("Usage: main.py input_image_path output_image_path")
-    if not os.path.exists(sys.argv[1]):
-        raise FileExistsError(f"File {sys.argv[1]} not found.")
-    return sys.argv[1], sys.argv[2]
-
-
-def draw_demo_result(input_image_path, annotation, output_image_path) -> None:
+def draw_demo_result(predictions, input_image_path, output_image_path) -> None:
+    annotation = convert_preds_to_sly_annotation(predictions)
     image = sly.image.read(path=input_image_path)
     for label in annotation.labels:
         label.draw_contour(image, thickness=5)
@@ -99,9 +95,9 @@ def send_error_data(func):
 @g.app.callback("get_output_classes_and_tags")
 @sly.timeit
 def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
-    model_meta = g.get_classes_and_tags_fn()
+    g.model_meta = g.get_classes_and_tags_fn()
     request_id = context["request_id"]
-    g.app.send_response(request_id, data=model_meta.to_json())
+    g.app.send_response(request_id, data=g.model_meta.to_json())
 
 
 @g.app.callback("get_custom_inference_settings")
@@ -192,9 +188,12 @@ def convert_preds_to_sly_annotation(
     for prediction in predictions:
         box = prediction["bbox"]
         sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
-        sly_obj_class = sly.ObjClass(
-            prediction["class"], sly.Rectangle
-        )
+        if isinstance(g.model_meta, sly.ProjectMeta):
+            sly_obj_class = g.model_meta.get_obj_class(prediction["class"])
+        else:
+            sly_obj_class = sly.ObjClass(
+                prediction["class"], sly.Rectangle
+            )
         if "confidence" in prediction.keys():
             sly_tag_meta = sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
             sly_tag = sly.Tag(sly_tag_meta, prediction["confidence"])
