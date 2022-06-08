@@ -1,6 +1,6 @@
 <div align="center" markdown>
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/poster.png" style="width: 100%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667748-75e5b35e-c9e5-4c43-a9cd-a9799b5a1af8.png" style="width: 100%;"/>
 
 # Serve Custom Detection Model Template
 
@@ -84,7 +84,7 @@ python main.py
 
 **Step 1.** Go to Ecosystem page and click on `private apps`
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-1.png" style="width:80%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667770-880d2c2b-2827-4fc1-ac84-1f5c6827eb66.png" style="width:80%;"/>
 
 **Step 2.** Click `+ Add private app` button
 
@@ -102,7 +102,7 @@ python main.py
 
 **Step 2.** Run the application from the context menu of `.pth` file. If you are running application from file with different than `.pth` extension, app will use demo model
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-2.png" style="width:80%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667785-00534a3e-ce8b-4d50-9490-c3de94afc4ac.png" style="width:80%;"/>
 
 **Step 3.** Press the Run button in the modal window
 
@@ -117,7 +117,7 @@ python main.py
     <tr style="width: 100%">
       <td>
         <b>NN Image Labeling</b>
-        <img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-image-connect.png" style="width:100%;"/>
+        <img src="https://user-images.githubusercontent.com/48913536/172667788-bcd75bae-079e-411f-a8f7-49bbb8e160d4.png" style="width:100%;"/>
       </td>
       <td>
         <b>Apply NN to Images Project</b>
@@ -134,9 +134,9 @@ Once you integrated serving app for your model, you can use any available infere
 
 * [NN Image Labeling](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
 
-<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/annotation-tool" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/related-apps-apply-to-image-thumb.png" width="450px" style='padding-bottom: 20px'/>  
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/annotation-tool" src="https://user-images.githubusercontent.com/48913536/172667808-56876936-a880-4548-a216-78abaea50812.png" width="450px" style='padding-bottom: 20px'/>  
 
 * [Apply NN to Images Project](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
 
-<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/project-dataset" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/related-apps-apply-to-project-thumb.png" width="450px" style='padding-bottom: 20px'/>  
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/project-dataset" src="https://user-images.githubusercontent.com/48913536/172667811-d5089a48-b7f2-4ddf-929c-1f4629c3fc4d.png" width="450px" style='padding-bottom: 20px'/>  
 
