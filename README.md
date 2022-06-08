@@ -92,6 +92,11 @@ python main.py
 
 <img src="https://user-images.githubusercontent.com/48913536/172667782-b5678b3d-0950-4638-bd66-abae8b8a6719.png" style="width:50%;"/>
 
+**Video**
+<a data-key="sly-embeded-video-link" href="https://youtu.be/9EOFd8sjA3Q" data-video-code="9EOFd8sjA3Q">
+    <img src="https://user-images.githubusercontent.com/48913536/172684900-43cf20a7-cf63-438a-b4ea-69f31f5facd5.png" alt="SLY_EMBEDED_VIDEO_LINK"  style="max-width:20%;">
+</a>
+
 # How To Run:
 
 **Step 1.** Add app with implemented custom nn model to your team from Ecosystem
