@@ -88,17 +88,17 @@ python main.py
 
 **Step 2.** Click `+ Add private app` button
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-2.png" style="width:80%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667780-6e87d2f7-3f68-40bd-a70f-f897568f2ffb.png" style="width:80%;"/>
 
 **Step 3.** Copy and paste repository url and generated [github/gitlab personal token](https://docs.supervise.ly/enterprise-edition/advanced-tuning/private-apps) to modal window
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-add-app-3.png" style="width:50%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667782-b5678b3d-0950-4638-bd66-abae8b8a6719.png" style="width:50%;"/>
 
 # How To Run:
 
 **Step 1.** Add app with implemented custom nn model to your team from Ecosystem
 
-<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/template-serve-nn-detection" src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/thumb.png" width="500px" style='padding-bottom: 20px'/>  
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/template-serve-nn-detection" src="https://user-images.githubusercontent.com/48913536/172667758-d9de3332-f2ff-482f-8a34-110c1547e46e.png" width="500px" style='padding-bottom: 20px'/>  
 
 **Step 2.** Run the application from the context menu of `.pth` file. If you are running application from file with different than `.pth` extension, app will use demo model
 
@@ -106,7 +106,7 @@ python main.py
 
 **Step 3.** Press the Run button in the modal window
 
-<img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/modal.png" style="width:50%;"/>
+<img src="https://user-images.githubusercontent.com/48913536/172667762-5ffbb929-d28d-4036-a52e-855fb402fdf1.png" style="width:50%;"/>
 
 **Step 4.** Add one of the [related apps](https://github.com/supervisely-ecosystem/template-serve-nn-detection/edit/dev-readme/README.md#related-apps) to your team from Ecosystem and run it.
 
@@ -121,7 +121,7 @@ python main.py
       </td>
       <td>
         <b>Apply NN to Images Project</b>
-        <img src="https://github.com/supervisely-ecosystem/template-serve-nn-detection/releases/download/v0.0.1/how-to-run-project-connect.png" style="width:100%;"/>
+        <img src="https://user-images.githubusercontent.com/48913536/172667799-e8151dc7-d457-4631-9231-a99f72e5bd8e.png" style="width:100%;"/>
       </td>
     </tr>
   </table>
