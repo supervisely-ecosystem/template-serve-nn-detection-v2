@@ -4,7 +4,7 @@
     "categories": [
       "templates"
     ],
-    "main_script": "src/main.py",
+    "main_script": "main.py",
     "description": "Template application to serve custom detection models",
     "docker_image": "supervisely/base-py-sdk:latest",
     "task_location": "application_sessions",
