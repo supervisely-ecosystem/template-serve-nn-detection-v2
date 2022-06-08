@@ -77,26 +77,12 @@ def deploy():
 
 
 def inference(image_path: str) -> sly.Annotation:
-    """This is a demo function to show how to inference your custom model
-    on a selected image in supervsely.
-
-    Parameters
-    ----------
-    state : dict
-        Dict that stores application fields
-    image_path : str
-        Local path to image
-
-    Returns
-    -------
-    sly.Annotation
-        Supervisely annotation
-    """
-
+    # User custom inference
     predictions = inference_fn(image_path)
     
     image = sly.image.read(image_path)
-    # This function converts model predictions into supervisely annotation format
+    
+    # This function converts custom model predictions into supervisely annotation format
     annotation = convert_preds_to_sly_annotation(
         predictions,
         img_size=image.shape[:2],
@@ -115,6 +101,79 @@ def draw_demo_result(predictions, input_image_path, output_image_path) -> None:
     sly.logger.info(f"Labeled image saved to {output_image_path} successfully")
 
 
+def convert_preds_to_sly_annotation(
+        predictions: dict,
+        img_size: Tuple[int, int],
+) -> sly.Annotation:
+    """Convert model predictions to supervisely format annotation."""
+    labels = []
+    for prediction in predictions:
+
+        if "bbox" not in prediction.keys():
+            raise ValueError(f"Model prediction does not contain bounding box. Prediction dict: {prediction}")
+        if "class" not in prediction.keys():
+            raise ValueError(f"Prediction does not contain class name. Prediction dict: {prediction}")
+        box = prediction["bbox"]
+        sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
+        try:
+            sly_obj_class = model_meta.get_obj_class(prediction["class"])
+        except KeyError as e:
+            raise ValueError("Predicted class name was not added to \
+                get_classes_and_tags(). Please add this class and try again.")
+             
+        if "confidence" in prediction.keys():
+            try:
+                sly_tag_meta = model_meta.get_tag_meta("confidence")
+            except KeyError as e:
+                raise ValueError("Predicted confidence tag name was not added to \
+                get_classes_and_tags(). Please add this tag and try again.")
+                
+            if not isinstance(prediction["confidence"], float):
+                raise TypeError(f"Predicted confidence of type {type(prediction['confidence'])} \
+                    must be float.")
+            elif prediction["confidence"] < 0 or prediction["confidence"] > 1:
+                raise ValueError(f"Predicted confidence value {prediction['confidence']} \
+                    must be in range [0, 1].")
+            else:
+                sly_tag = sly.Tag(sly_tag_meta, prediction["confidence"])
+            
+            sly_tag_collection = sly.TagCollection([sly_tag])
+        else:
+            sly_tag_collection = sly.TagCollection([])
+        sly_label = sly.Label(sly_rect, sly_obj_class, tags=sly_tag_collection)
+        labels.append(sly_label)
+
+    ann = sly.Annotation(img_size=img_size, labels=labels)
+    return ann
+
+
+def download_model() -> None:
+    """Download model weights from Supervisely team files."""
+    if not remote_weights_path.endswith(".pth"):
+        sly.logger.info("Model is not found. Template mode with example labels will be used.")
+        return
+
+    global local_weights_path
+    info = api.file.get_info_by_path(team_id, remote_weights_path)
+    if info is None:
+        raise FileNotFoundError(f"Weights file not found: {remote_weights_path}")
+
+    sly.logger.info("Downloading model weights...")
+    local_weights_path = os.path.join(app.data_dir, sly.fs.get_file_name_with_ext(remote_weights_path))
+    api.file.download(
+        team_id,
+        remote_weights_path,
+        local_weights_path,
+        cache=app.cache
+    )
+
+    sly.logger.info("Model has been successfully downloaded")
+
+
+#################################
+# REQUESTS PROCESSING FUNCTIONS #
+#################################
+
 def send_error_data(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -130,6 +189,7 @@ def send_error_data(func):
 
 
 @sly.timeit
+@send_error_data
 def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
     global model_meta
     model_meta = get_classes_and_tags_fn()
@@ -138,6 +198,7 @@ def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logge
 
 
 @sly.timeit
+@send_error_data
 def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
     request_id = context["request_id"]
     app.send_response(request_id, data={})
@@ -154,6 +215,7 @@ def get_session_info(api: sly.Api, task_id, context, state, app_logger):
 
 
 @sly.timeit
+@send_error_data
 def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     image_url = state["image_url"]
@@ -170,6 +232,7 @@ def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
 
 
 @sly.timeit
+@send_error_data
 def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     image_id = state["image_id"]
@@ -183,6 +246,7 @@ def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
 
 
 @sly.timeit
+@send_error_data
 def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
     app_logger.debug("Input data", extra={"state": state})
     ids = state["batch_ids"]
@@ -196,67 +260,3 @@ def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
 
     request_id = context["request_id"]
     app.send_response(request_id, data=results)
-
-
-def convert_preds_to_sly_annotation(
-        predictions: dict,
-        img_size: Tuple[int, int],
-) -> sly.Annotation:
-    """Convert model predictions to supervisely format annotation.
-
-    Parameters
-    ----------
-    predictions : dict
-        Prediction bounding boxes
-    img_size : Tuple[int, int]
-        height and width of the image
-
-    Returns
-    -------
-    sly.Annotation
-        Supervisely annotation in JSON format
-    """
-    labels = []
-    for prediction in predictions:
-        box = prediction["bbox"]
-        sly_rect = sly.Rectangle(box[0], box[1], box[2], box[3])
-        if isinstance(model_meta, sly.ProjectMeta):
-            sly_obj_class = model_meta.get_obj_class(prediction["class"])
-        else:
-            sly_obj_class = sly.ObjClass(
-                prediction["class"], sly.Rectangle
-            )
-        if "confidence" in prediction.keys():
-            sly_tag_meta = sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
-            sly_tag = sly.Tag(sly_tag_meta, prediction["confidence"])
-            sly_tag_collection = sly.TagCollection([sly_tag])
-        else:
-            sly_tag_collection = sly.TagCollection([])
-        sly_label = sly.Label(sly_rect, sly_obj_class, tags=sly_tag_collection)
-        labels.append(sly_label)
-
-    ann = sly.Annotation(img_size=img_size, labels=labels)
-    return ann
-
-
-def download_model() -> None:
-    global local_weights_path
-    if not remote_weights_path.endswith(".pth"):
-        sly.logger.info("Model is not found. Template mode with example labels will be used.")
-        return
-
-    info = api.file.get_info_by_path(team_id, remote_weights_path)
-    if info is None:
-        raise FileNotFoundError(f"Weights file not found: {remote_weights_path}")
-
-    sly.logger.info("Downloading model weights...")
-    local_weights_path = os.path.join(app.data_dir, sly.fs.get_file_name_with_ext(remote_weights_path))
-    api.file.download(
-        team_id,
-        remote_weights_path,
-        local_weights_path,
-        cache=app.cache
-    )
-
-    sly.logger.info("Model has been successfully downloaded")
-

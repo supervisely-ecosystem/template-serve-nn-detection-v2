@@ -16,7 +16,7 @@ def get_classes_and_tags() -> sly.ProjectMeta:
     ])
 
     tags = sly.TagMetaCollection([
-        # Example: confidence tag for bounding boxes
+        # Example: confidence tag for bounding boxes with number value
         sly.TagMeta("confidence", sly.TagValueType.ANY_NUMBER)
     ])
 
@@ -70,6 +70,7 @@ def deploy_model(model_weights_path: str) -> None:
     
 def main():
     if "TASK_ID" not in os.environ:
+        # Used for local debug
         model_weights_path = "/my-folder/my_weights.pth"
         input_image_path = "/my-folder/my_image.png"
         result_image_path = "/my-folder/result_image.png"
@@ -77,6 +78,7 @@ def main():
         predictions = inference(input_image_path)
         helpers.draw_demo_result(predictions, input_image_path, result_image_path)
     else:
+        # Used for production
         helpers.serve_detection(
             get_session_info, 
             get_classes_and_tags, 
