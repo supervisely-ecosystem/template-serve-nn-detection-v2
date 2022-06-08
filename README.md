@@ -64,7 +64,7 @@ By default template app generates demo predictions to demonstrate the functional
 `main.py` - contains 4 functions with commentaries to help you implement your custom nn model:
 
 * `get_classes_and_tags()` - constructs ProjectMeta object with specified model classes and tags.
-* `get_session_info()` - generates model info dict with any parameters (see recommended parameters in file).
+* `get_session_info()` - generates model info dict with any parameters (see recommended parameters in file). You will see this parameters when you will connect to your model from other apps.
 * `inference(image_path)` - this functions gets input image path and return model predictions on this image. See predictions format in file. Inference results will be automatically converted to [supervisely annotation format](https://docs.supervise.ly/data-organization/00_ann_format_navi).
 * `deploy_model(model_weights_path)` - function initializes model to be ready to get input data for inference.
 
