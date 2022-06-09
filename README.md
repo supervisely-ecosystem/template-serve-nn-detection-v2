@@ -101,21 +101,25 @@ python main.py
 
 # How To Run:
 
-**Step 1.** Add app with implemented custom nn model to your team from Ecosystem
+**Step 1.** Upload your model to Team Files
+
+<img src="https://user-images.githubusercontent.com/48913536/172897541-9ff48bb7-00cb-4732-9011-8604290279f7.gif" style="width:80%;"/>
+
+**Step 2.** Add app with implemented custom nn model to your team from Ecosystem
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/template-serve-nn-detection" src="https://user-images.githubusercontent.com/48913536/172667758-d9de3332-f2ff-482f-8a34-110c1547e46e.png" width="500px" style='padding-bottom: 20px'/>  
 
-**Step 2.** Run the application from the context menu of `.pth` file. If you are running application from file with different than `.pth` extension, app will use demo model
+**Step 3.** Run the application from the context menu of `.pth` file. If you are running application from file with different than `.pth` extension, app will use demo model
 
 <img src="https://user-images.githubusercontent.com/48913536/172667785-00534a3e-ce8b-4d50-9490-c3de94afc4ac.png" style="width:80%;"/>
 
-**Step 3.** Press the Run button in the modal window
+**Step 4.** Press the Run button in the modal window
 
 <img src="https://user-images.githubusercontent.com/48913536/172667762-5ffbb929-d28d-4036-a52e-855fb402fdf1.png" style="width:50%;"/>
 
-**Step 4.** Add one of the related apps to your team from Ecosystem and run it.
+**Step 5.** Add one of the related apps to your team from Ecosystem and run it.
 
-**Step 5.** Open running applier app and connect to app session with served model
+**Step 6.** Open running applier app and connect to app session with served model
 
 <div>
   <table>
@@ -132,7 +136,7 @@ python main.py
   </table>
 </div>
 
-**Step 6.** Your served model is ready to apply. 
+**Step 7.** Your served model is ready to apply. 
 
 Once you integrated serving app for your model, you can use any available inference interfaces in Ecosystem:
 
