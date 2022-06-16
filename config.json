@@ -2,7 +2,7 @@
     "name": "Serve Custom Detection Model Template",
     "type": "app",
     "categories": [
-      "templates"
+      "development"
     ],
     "main_script": "main.py",
     "description": "Template application to serve custom detection models",
