@@ -3,6 +3,8 @@ from typing import Dict, List
 import supervisely as sly
 import helpers
 
+from helpers import app
+
 my_model = None
 
 def get_classes_and_tags() -> sly.ProjectMeta:
