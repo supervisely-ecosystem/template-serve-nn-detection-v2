@@ -73,7 +73,7 @@ def deploy_model(model_weights_path: str) -> None:
     
 @app.on_event("startup")
 async def startup_event():
-    if "TASK_ID" in os.environ:
+    if "TASK_ID" not in os.environ:
         # Used for local debug
         model_weights_path = "./my_folder/my_weights.pth"
         input_image_path = "./my_folder/my_image.png"
