@@ -28,7 +28,6 @@ class ServeRequestBody(BaseModel):
 
 
 api: sly.Api = None
-app = FastAPI()
 app_temp_dir_path = app_root_directory / 'app_temp'
 app_temp_dir_path.mkdir(parents=True, exist_ok=True)
 team_id = None
@@ -50,11 +49,12 @@ app_cache_dir.mkdir(parents=True, exist_ok=True)
 app_cache = FileCache(name="FileCache", storage_root=app_cache_dir.as_posix())
 
 
-def serve_detection(get_info_fn,
+def serve_detection(app: FastAPI,
+                    get_info_fn,
                     get_meta_fn,
                     inf_fn,
                     deploy_fn):
-    global api, app, team_id, workspace_id, get_session_info_fn, \
+    global api, team_id, workspace_id, get_session_info_fn, \
         get_classes_and_tags_fn, inference_fn, deploy_model_fn, model_meta
 
     get_session_info_fn = get_info_fn
