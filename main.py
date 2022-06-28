@@ -69,7 +69,8 @@ def deploy_model(model_weights_path: str) -> None:
     my_model = None
     
     
-def main():
+@app.on_event("startup")
+async def startup_event():
     if "TASK_ID" not in os.environ:
         # Used for local debug
         model_weights_path = "./my_folder/my_weights.pth"
@@ -88,6 +89,4 @@ def main():
         )
 
 
-if __name__ == '__main__':
-    main()
 
