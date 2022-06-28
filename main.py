@@ -70,9 +70,9 @@ def deploy_model(model_weights_path: str) -> None:
 def main():
     if "TASK_ID" not in os.environ:
         # Used for local debug
-        model_weights_path = "/my-folder/my_weights.pth"
-        input_image_path = "/my-folder/my_image.png"
-        result_image_path = "/my-folder/result_image.png"
+        model_weights_path = "./my_folder/my_weights.pth"
+        input_image_path = "./my_folder/my_image.png"
+        result_image_path = "./my_folder/result_image.png"
         deploy_model(model_weights_path)
         predictions = inference(input_image_path)
         helpers.draw_demo_result(predictions, input_image_path, result_image_path)
@@ -86,5 +86,6 @@ def main():
         )
 
 
-if __name__ == "__main__":
-    sly.main_wrapper("main", main)
+if __name__ == '__main__':
+    main()
+

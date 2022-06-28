@@ -1,14 +1,18 @@
-from typing import Dict, List, Tuple, Union
 import functools
 import os
 import sys
+from pathlib import Path
+from typing import Tuple
+
 import supervisely as sly
-from supervisely.app.v1.app_service import AppService
+from fastapi import FastAPI
+from pydantic import BaseModel
+from supervisely import FileCache
 
 # Add app root directory to system paths
-app_root_directory = os.getcwd()
+app_root_directory = Path(__file__).absolute().parent
 sly.logger.info(f"App root directory: {app_root_directory}")
-sys.path.append(app_root_directory)
+sys.path.append(app_root_directory.as_posix())
 
 # Use the following lines only for debug purposes
 # from dotenv import load_dotenv
@@ -17,8 +21,16 @@ sys.path.append(app_root_directory)
 # load_dotenv(debug_env_path)
 # load_dotenv(secret_debug_env_path, override=True)
 
-api = None
-app = None
+
+class ServeRequestBody(BaseModel):
+    state: dict = {}
+    context: dict = {}
+
+
+api: sly.Api = None
+app = FastAPI()
+app_temp_dir_path = app_root_directory / 'app_temp'
+app_temp_dir_path.mkdir(parents=True, exist_ok=True)
 team_id = None
 workspace_id = None
 
@@ -27,11 +39,15 @@ inference_fn = None
 get_classes_and_tags_fn = None
 get_session_info_fn = None
 deploy_model_fn = None
-model_meta = None
+model_meta: sly.ProjectMeta = None
 local_weights_path = None
 remote_weights_path = ""
 if "modal.state.slyFile" in os.environ:
     remote_weights_path = os.environ['modal.state.slyFile'] 
+
+app_cache_dir = app_temp_dir_path / 'cache'
+app_cache_dir.mkdir(parents=True, exist_ok=True)
+app_cache = FileCache(name="FileCache", storage_root=app_cache_dir.as_posix())
 
 
 def serve_detection(get_info_fn,
@@ -53,13 +69,13 @@ def serve_detection(get_info_fn,
 
     # App initialization
     api = sly.Api.from_env()
-    app = AppService()
-    app._add_callback("get_output_classes_and_tags", get_output_classes_and_tags)
-    app._add_callback("get_custom_inference_settings", get_custom_inference_settings)
-    app._add_callback("get_session_info", get_session_info)
-    app._add_callback("inference_image_url", inference_image_id)
-    app._add_callback("inference_batch_ids", inference_batch_ids)
-    app._add_callback("inference_image_url", inference_image_url)
+
+    app.add_api_route("get_output_classes_and_tags", get_output_classes_and_tags, methods=["POST"])
+    app.add_api_route("get_custom_inference_settings", get_custom_inference_settings, methods=["POST"])
+    app.add_api_route("get_session_info", get_session_info, methods=["POST"])
+    app.add_api_route("inference_image_url", inference_image_id, methods=["POST"])
+    app.add_api_route("inference_batch_ids", inference_batch_ids, methods=["POST"])
+    app.add_api_route("inference_image_url", inference_image_url, methods=["POST"])
 
     # Supervisely variables
     team_id = int(os.environ["context.teamId"])
@@ -68,7 +84,6 @@ def serve_detection(get_info_fn,
     model_meta = get_classes_and_tags_fn()
     download_model()
     deploy()
-    app.run()
 
 
 def deploy():
@@ -165,12 +180,12 @@ def download_model() -> None:
         raise FileNotFoundError(f"Weights file not found: {remote_weights_path}")
 
     sly.logger.info("Downloading model weights...")
-    local_weights_path = os.path.join(app.data_dir, sly.fs.get_file_name_with_ext(remote_weights_path))
+    local_weights_path = os.path.join(app_temp_dir_path, sly.fs.get_file_name_with_ext(remote_weights_path))
     api.file.download(
         team_id,
         remote_weights_path,
         local_weights_path,
-        cache=app.cache
+        cache=app_cache
     )
 
     sly.logger.info("Model has been successfully downloaded")
@@ -196,73 +211,70 @@ def send_error_data(func):
 
 @sly.timeit
 @send_error_data
-def get_output_classes_and_tags(api: sly.Api, task_id, context, state, app_logger):
+def get_output_classes_and_tags():
     global model_meta
     model_meta = get_classes_and_tags_fn()
-    request_id = context["request_id"]
-    app.send_response(request_id, data=model_meta.to_json())
+    return model_meta.to_json()
 
 
 @sly.timeit
 @send_error_data
-def get_custom_inference_settings(api: sly.Api, task_id, context, state, app_logger):
-    request_id = context["request_id"]
-    app.send_response(request_id, data={})
+def get_custom_inference_settings():
+    return {}
 
 
 @sly.timeit
 @send_error_data
-def get_session_info(api: sly.Api, task_id, context, state, app_logger):
-
-    info = get_session_info_fn()
-
-    request_id = context["request_id"]
-    app.send_response(request_id, data=info)
+def get_session_info():
+    return get_session_info_fn()
 
 
 @sly.timeit
 @send_error_data
-def inference_image_url(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
+def inference_image_url(request_body: ServeRequestBody):
+    state = request_body.state
+    sly.logger.debug("Input data", extra={"state": state})
     image_url = state["image_url"]
 
     ext = sly.fs.get_file_ext(image_url)
     assert ext in ["png", "jpg", "jpeg"]
-    local_image_path = os.path.join(app.data_dir, f"{sly.rand_str(15)}.{ext}")
+
+    local_image_path = os.path.join(app_temp_dir_path, f"{sly.rand_str(15)}.{ext}")
     sly.fs.download(image_url, local_image_path)
 
     ann = inference(image_path=local_image_path)
 
-    request_id = context["request_id"]
-    app.send_response(request_id, data=ann.to_json())
+    return ann.to_json()
 
 
 @sly.timeit
 @send_error_data
-def inference_image_id(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
+def inference_image_id(request_body: ServeRequestBody):
+    state = request_body.state
+
+    sly.logger.debug("Input data", extra={"state": state})
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
-    image_path = os.path.join(app.data_dir, sly.rand_str(10) + image_info.name)
+    image_path = os.path.join(app_temp_dir_path, sly.rand_str(10) + image_info.name)
     ann = inference(image_path=image_path)
     sly.fs.silent_remove(image_path)
-    
-    request_id = context["request_id"]
-    app.send_response(request_id, data=ann.to_json())
+
+    return ann.to_json()
 
 
 @sly.timeit
 @send_error_data
-def inference_batch_ids(api: sly.Api, task_id, context, state, app_logger):
-    app_logger.debug("Input data", extra={"state": state})
+def inference_batch_ids(request_body: ServeRequestBody):
+    state = request_body.state
+
+    sly.logger.debug("Input data", extra={"state": state})
     ids = state["batch_ids"]
     infos = api.image.get_info_by_id_batch(ids)
-    paths = [os.path.join(app.data_dir, sly.rand_str(10) + info.name) for info in infos]
+    paths = [os.path.join(app_temp_dir_path, sly.rand_str(10) + info.name) for info in infos]
     api.image.download_paths(infos[0].dataset_id, ids, paths)
     results = []
     for image_path in paths:
         ann = inference(image_path=image_path)
         results.append(ann.to_json())
 
-    request_id = context["request_id"]
-    app.send_response(request_id, data=results)
+    return results
