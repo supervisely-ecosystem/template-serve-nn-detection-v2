@@ -5,8 +5,6 @@ from fastapi import FastAPI
 
 import helpers
 
-
-app = FastAPI()
 my_model = None
 
 def get_classes_and_tags() -> sly.ProjectMeta:
@@ -71,9 +69,9 @@ def deploy_model(model_weights_path: str) -> None:
     my_model = None
     
     
-@app.on_event("startup")
+@helpers.app.on_event("startup")
 async def startup_event():
-    if "TASK_ID" not in os.environ:
+    if "TASK_ID" in os.environ:
         # Used for local debug
         model_weights_path = "./my_folder/my_weights.pth"
         input_image_path = "./my_folder/my_image.png"
@@ -84,14 +82,13 @@ async def startup_event():
     else:
         # Used for production
         helpers.serve_detection(
-            app=app,
             get_info_fn=get_session_info,
             get_meta_fn=get_classes_and_tags,
             inf_fn=inference,
             deploy_fn=deploy_model
         )
 
-        sly.logger.info("actual 2")
+        sly.logger.info("actual 3")
 
 
 
