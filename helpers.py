@@ -73,10 +73,9 @@ def serve_detection(get_info_fn,
     app.add_api_route("/get_output_classes_and_tags/", get_output_classes_and_tags, methods=["POST"])
     app.add_api_route("/get_custom_inference_settings/", get_custom_inference_settings, methods=["POST"])
     app.add_api_route("/get_session_info/", get_session_info, methods=["POST"])
-    app.add_api_route("/inference_image_url/", inference_image_id, methods=["POST"])
+    app.add_api_route("/inference_image_id/", inference_image_id, methods=["POST"])
     app.add_api_route("/inference_batch_ids/", inference_batch_ids, methods=["POST"])
     app.add_api_route("/inference_image_url/", inference_image_url, methods=["POST"])
-    app.add_api_route("/test_function/", test_function, methods=["POST"])
 
     # Supervisely variables
     team_id = int(os.environ["context.teamId"])
