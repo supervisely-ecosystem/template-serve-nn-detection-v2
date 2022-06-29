@@ -39,7 +39,7 @@ def get_session_info() -> Dict:
 
 
 def inference(image_path: str) -> List[Dict]:
-    image = sly.image.read(path=image_path) # shape: [H, W, 3], RGB
+    image = sly.image.read(path=image_path)  # shape: [H, W, 3], RGB
     
     #########################
     # INSERT YOUR CODE HERE #

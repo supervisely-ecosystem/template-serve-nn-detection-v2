@@ -198,14 +198,11 @@ def download_model() -> None:
 def send_error_data(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        value = None
         try:
             value = func(*args, **kwargs)
+            return value
         except Exception as e:
-            request_id = kwargs["context"]["request_id"]
-            app.send_response(request_id, data={"error": repr(e)})
-        return value
-
+            return {"error": repr(e)}
     return wrapper
 
 
@@ -258,9 +255,9 @@ def inference_image_id(request_body: ServeRequestBody):
     sly.logger.debug("Input data", extra={"state": state})
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
-    image_path = os.path.join(app_temp_dir_path, sly.rand_str(10) + image_info.name)
-    ann = inference(image_path=image_path)
-    sly.fs.silent_remove(image_path)
+    image_path = Path(app_temp_dir_path, sly.rand_str(10), image_info.name)
+    ann = inference(image_path=image_path.as_posix())
+    sly.fs.silent_remove(image_path.as_posix())
 
     return ann.to_json()
 
