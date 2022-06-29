@@ -237,9 +237,9 @@ def inference_image_url(request_body: ServeRequestBody):
     image_url = state["image_url"]
 
     ext = sly.fs.get_file_ext(image_url)
-    assert ext in ["png", "jpg", "jpeg"]
+    assert ext in [".png", ".jpg", ".jpeg"]
 
-    local_image_path = os.path.join(app_temp_dir_path, f"{sly.rand_str(15)}.{ext}")
+    local_image_path = os.path.join(app_temp_dir_path, f"{sly.rand_str(15)}{ext}")
     sly.fs.download(image_url, local_image_path)
 
     ann = inference(image_path=local_image_path)
