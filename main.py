@@ -88,7 +88,7 @@ async def startup_event():
             deploy_fn=deploy_model
         )
 
-        sly.logger.info("actual 3")
+        sly.logger.info("actual 4")
 
 
 
