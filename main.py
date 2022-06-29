@@ -1,6 +1,8 @@
 import os
 from typing import Dict, List
 import supervisely as sly
+from fastapi import FastAPI
+
 import helpers
 
 my_model = None
@@ -67,24 +69,26 @@ def deploy_model(model_weights_path: str) -> None:
     my_model = None
     
     
-def main():
+@helpers.app.on_event("startup")
+async def startup_event():
     if "TASK_ID" not in os.environ:
         # Used for local debug
-        model_weights_path = "/my-folder/my_weights.pth"
-        input_image_path = "/my-folder/my_image.png"
-        result_image_path = "/my-folder/result_image.png"
+        model_weights_path = "./my_folder/my_weights.pth"
+        input_image_path = "./my_folder/my_image.png"
+        result_image_path = "./my_folder/result_image.png"
         deploy_model(model_weights_path)
         predictions = inference(input_image_path)
         helpers.draw_demo_result(predictions, input_image_path, result_image_path)
     else:
         # Used for production
         helpers.serve_detection(
-            get_session_info, 
-            get_classes_and_tags, 
-            inference, 
-            deploy_model
+            get_info_fn=get_session_info,
+            get_meta_fn=get_classes_and_tags,
+            inf_fn=inference,
+            deploy_fn=deploy_model
         )
 
+        sly.logger.info("actual 3")
 
-if __name__ == "__main__":
-    sly.main_wrapper("main", main)
+
+
