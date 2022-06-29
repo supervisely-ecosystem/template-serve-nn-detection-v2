@@ -256,6 +256,7 @@ def inference_image_id(request_body: ServeRequestBody):
     image_id = state["image_id"]
     image_info = api.image.get_info_by_id(image_id)
     image_path = Path(app_temp_dir_path, sly.rand_str(10), image_info.name)
+    api.image.download_path(image_id, image_path.as_posix())
     ann = inference(image_path=image_path.as_posix())
     sly.fs.silent_remove(image_path.as_posix())
 
