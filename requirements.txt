@@ -1,1 +1,1 @@
-supervisely[apps]
+supervisely[apps]==6.35.0
