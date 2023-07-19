@@ -12,7 +12,8 @@
   "icon_background": "#FFFFFF",
   "icon": "https://user-images.githubusercontent.com/48913536/172667732-552769ce-f93f-41ab-ba76-134d0ca1fb88.png",
   "icon_cover": true,
-  "need_gpu": true,
+  "need_gpu": false,
+  "gpu": "preferred",
   "headless": true,
   "instance_version": "6.4.51",
   "context_menu": {
