@@ -13,11 +13,11 @@
 </p>
 
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervise.ly/apps/supervisely-ecosystem/template-serve-nn-detection)
-[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervise.ly/slack)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/supervisely-ecosystem/template-serve-nn-detection)
+[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/template-serve-nn-detection)
-[![views](https://app.supervise.ly/img/badges/views/supervisely-ecosystem/template-serve-nn-detection-v2.png)](https://supervise.ly)
-[![runs](https://app.supervise.ly/img/badges/runs/supervisely-ecosystem/template-serve-nn-detection-v2.png)](https://supervise.ly)
+[![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/template-serve-nn-detection-v2.png)](https://supervisely.com)
+[![runs](https://app.supervisely.com/img/badges/runs/supervisely-ecosystem/template-serve-nn-detection-v2.png)](https://supervisely.com)
 
 </div>
 
@@ -64,7 +64,7 @@ By default template app generates demo predictions to demonstrate the functional
 
 * `get_classes_and_tags()` - constructs ProjectMeta object with specified model classes and tags.
 * `get_session_info()` - generates model info dict with any parameters (see recommended parameters in file). You will see this parameters when you will connect to your model from other apps.
-* `inference(image_path)` - this functions gets input image path and return model predictions on this image. See predictions format in file. Inference results will be automatically converted to [supervisely annotation format](https://docs.supervise.ly/data-organization/00_ann_format_navi).
+* `inference(image_path)` - this functions gets input image path and return model predictions on this image. See predictions format in file. Inference results will be automatically converted to [supervisely annotation format](https://docs.supervisely.com/data-organization/00_ann_format_navi).
 * `deploy_model(model_weights_path)` - function initializes model to be ready to get input data for inference.
 
 **Step 1.** Make sure you've edited `main.py`, without edits it will generate demo predictions
@@ -89,7 +89,7 @@ python main.py
 
 <img src="https://user-images.githubusercontent.com/48913536/172667780-6e87d2f7-3f68-40bd-a70f-f897568f2ffb.png" style="width:80%;"/>
 
-**Step 3.** Copy and paste repository url and generated [github/gitlab personal token](https://docs.supervise.ly/enterprise-edition/advanced-tuning/private-apps) to modal window
+**Step 3.** Copy and paste repository url and generated [github/gitlab personal token](https://docs.supervisely.com/enterprise-edition/advanced-tuning/private-apps) to modal window
 
 <img src="https://user-images.githubusercontent.com/48913536/172667782-b5678b3d-0950-4638-bd66-abae8b8a6719.png" style="width:50%;"/>
 
@@ -140,11 +140,11 @@ python main.py
 Once you integrated serving app for your model, you can use any available inference interfaces in Ecosystem:
 
 
-* [NN Image Labeling](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
+* [NN Image Labeling](https://ecosystem.supervisely.com/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/annotation-tool" src="https://user-images.githubusercontent.com/48913536/172667808-56876936-a880-4548-a216-78abaea50812.png" width="450px" style='padding-bottom: 20px'/>  
 
-* [Apply NN to Images Project](https://ecosystem.supervise.ly/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
+* [Apply NN to Images Project](https://ecosystem.supervisely.com/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/project-dataset" src="https://user-images.githubusercontent.com/48913536/172667811-d5089a48-b7f2-4ddf-929c-1f4629c3fc4d.png" width="450px" style='padding-bottom: 20px'/>  
 
