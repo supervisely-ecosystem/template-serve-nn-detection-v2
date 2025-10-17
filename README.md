@@ -13,7 +13,7 @@
 </p>
 
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](../../../../supervisely-ecosystem/template-serve-nn-detection)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/supervisely-ecosystem/template-serve-nn-detection)
 [![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/template-serve-nn-detection)
 [![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/template-serve-nn-detection-v2.png)](https://supervisely.com)
@@ -140,11 +140,11 @@ python main.py
 Once you integrated serving app for your model, you can use any available inference interfaces in Ecosystem:
 
 
-* [NN Image Labeling](../../../../supervisely-ecosystem/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
+* [NN Image Labeling](https://ecosystem.supervisely.com/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fannotation-tool) - **Apply served model to image** 
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/annotation-tool" src="https://user-images.githubusercontent.com/48913536/172667808-56876936-a880-4548-a216-78abaea50812.png" width="450px" style='padding-bottom: 20px'/>  
 
-* [Apply NN to Images Project](../../../../supervisely-ecosystem/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
+* [Apply NN to Images Project](https://ecosystem.supervisely.com/apps/supervisely-ecosystem%252Fnn-image-labeling%252Fproject-dataset) - **Apply served model to whole project or dataset**
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/nn-image-labeling/project-dataset" src="https://user-images.githubusercontent.com/48913536/172667811-d5089a48-b7f2-4ddf-929c-1f4629c3fc4d.png" width="450px" style='padding-bottom: 20px'/>  
 
