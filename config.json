@@ -7,7 +7,7 @@
   ],
   "entrypoint": "python -m uvicorn main:helpers.app --host 0.0.0.0 --port 8000",
   "description": "Template application to serve custom detection models",
-  "docker_image": "supervisely/base-py-sdk:6.73.564",
+  "docker_image": "supervisely/base-py-sdk-hardened:6.73.564",
   "task_location": "application_sessions",
   "icon_background": "#FFFFFF",
   "icon": "https://user-images.githubusercontent.com/48913536/172667732-552769ce-f93f-41ab-ba76-134d0ca1fb88.png",
